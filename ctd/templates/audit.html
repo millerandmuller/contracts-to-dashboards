@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block body %}
+<h2>Audit log</h2><p class="lead">Append-only. Name, time, reason, change.</p>
+<table><tr><th>#</th><th>When</th><th>Who</th><th>What</th><th>Subject</th><th>Why</th><th>Change</th></tr>
+{% for a in rows %}<tr><td class="cite">{{ a.id }}</td><td class="cite">{{ a.at }}</td><td>{{ a.actor }}</td><td>{{ a.action }}</td><td class="cite">{{ a.subject }}</td><td>{{ a.reason }}</td><td class="cite">{{ a.diff|truncate(140) }}</td></tr>{% endfor %}</table>
+{% endblock %}

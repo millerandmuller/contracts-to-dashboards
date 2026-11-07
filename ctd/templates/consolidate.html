@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block body %}
+<h2>Retire a duplicate? The test runs first.</h2>
+<p class="lead">{{ res.proposal.why }} We retire <b>{{ res.retire_asset }}</b> ({{ res.proposal.retire }}) and keep <b>{{ res.keep_asset }}</b> ({{ res.proposal.keep }}).</p>
+<p class="row">{% for p in proposals %}<a class="btn {{ '' if p.id==pid else 'ghost' }}" href="/consolidate?p={{ p.id }}">{{ p.id }}: {{ p.retire }} → {{ p.keep }}</a>{% endfor %}</p>
+<table><tr><th>Report</th><th>Counts stock weeks as</th></tr>
+<tr><td>{{ res.retire_asset }} (today)</td><td>{{ res.formula_labels[res.proposal.retire_formula] }}</td></tr>
+<tr><td>{{ res.keep_asset }} (would stay)</td><td>{{ res.formula_labels[res.proposal.keep_formula] }}</td></tr></table>
+<div class="cite">Formulas are synthetic [curated]. The data pack has none. The test mechanics are real.</div>
+
+{% if res.blocked %}
+<div class="blocked"><b>Blocked.</b> After this merge, the {{ res.affected_role }} would read different answers than today.
+{% set hid = res.rows|selectattr('hides_open_handover')|list %}{% if hid %}<br><b>{{ hid[0].market }}</b> turns from <span class="st-amber">amber</span> to <span class="st-ok">green</span>, while a handover for it is still open. The merge would hide it.{% endif %}</div>
+{% else %}
+<div class="passed"><b>Passed.</b> Every pair keeps its answer after the merge.</div>
+{% endif %}
+<table><tr><th>Pair</th><th class="num">Today</th><th class="num">After merge</th><th>Answer today</th><th>Answer after</th><th></th></tr>
+{% for r in res.rows %}<tr class="{{ 'flip' if r.flipped }}"><td>{{ r.market }} <span class="cite">{{ r.pair }}</span></td><td class="num">{{ r.before }}</td><td class="num">{{ r.after }}</td>
+<td class="st-{{ r.status_before }}">{{ r.status_before }}</td><td class="st-{{ r.status_after }}">{{ r.status_after }}</td>
+<td>{% if r.hides_open_handover %}<span class="badge bad">hides an open handover</span>{% elif r.hides_risk %}<span class="badge bad">hides risk</span>{% elif r.flipped %}<span class="badge">changes</span>{% else %}<span class="badge good">same</span>{% endif %}</td></tr>{% endfor %}</table>
+
+{% if res.decisions %}
+<h3>Decision</h3>{% for d in res.decisions %}<div class="note"><b>{{ d.choice|replace('_',' ') }}</b> by {{ d.by }} at {{ d.at[11:16] }}: {{ d.reason }}</div>{% endfor %}
+{% elif res.proposal.retire in c.replaces %}
+<div class="note">Already retired in the contract.</div>
+{% else %}
+<h3>A person decides</h3>
+<div class="row"><input type="text" id="why" placeholder="Why? (required)" style="max-width:34rem" value="{{ 'Different denominator. Keep the old report until the owners agree on one.' if res.blocked else 'Same answers on every pair.' }}">
+{% if res.blocked %}
+ <button class="go" onclick="act('/consolidate/{{ pid }}/decide',{choice:'keep_exception',reason:document.getElementById('why').value},()=>location.reload())">Keep as documented exception</button>
+ <button class="ghost" onclick="act('/consolidate/{{ pid }}/decide',{choice:'fix_mapping',reason:document.getElementById('why').value},()=>location.reload())">Fix the mapping and retire</button>
+{% else %}
+ <button class="go" onclick="act('/consolidate/{{ pid }}/decide',{choice:'approve',reason:document.getElementById('why').value},()=>location.reload())">Retire {{ res.proposal.retire }}</button>
+{% endif %}</div>
+{% endif %}
+<h3>Audit log</h3>
+<table>{% for a in audit %}<tr><td class="cite">{{ a.at[11:16] }}</td><td>{{ a.actor }}</td><td>{{ a.action }} <span class="cite">{{ a.subject }}</span></td><td>{{ a.reason }}</td></tr>{% endfor %}</table>
+{% endblock %}

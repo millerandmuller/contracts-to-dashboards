@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block body %}
+<h2>Three questions for the {{ role }}</h2>
+<p class="lead">Short questions, in your own words. The examples come from the role list, not from a model.</p>
+{% if existing %}<div class="note">A contract already exists (version {{ existing.version }}). <a href="/contract">Open it</a>.</div>{% endif %}
+<form method="post" action="/interview" id="qform">
+<input type="hidden" name="prepared" value="{{ 1 if prepared else 0 }}">
+{% for q in qs %}
+  <label class="q" for="{{ q.id }}">{{ loop.index }}. {{ q.text }}</label>
+  <input type="text" id="{{ q.id }}" name="{{ q.id }}" value="{{ answers[q.id] }}" autocomplete="off">
+  {% if q.id=='q1' and followup %}<div class="err">{{ followup }}</div>{% endif %}
+{% endfor %}
+{% if error %}<div class="err">{{ error }}</div>{% endif %}
+<p class="row"><button class="go" type="submit">Show the contract</button>
+{% if not prepared %}<a class="btn ghost" href="/interview?prepared=1">Use the prepared answers</a>{% else %}<span class="badge cached" title="Answers loaded from data/fixtures. Typing works the same.">prepared answers</span>{% endif %}</p>
+</form>
+
+{% if proposal %}
+<h3>Contract proposal (nothing is saved yet)</h3>
+{% if proposal.errors %}
+  {% for e in proposal.errors %}<div class="err">{{ e }}</div>{% endfor %}
+{% else %}
+  <p class="row"><span class="badge good">checks passed</span> <span class="cite">owner active · official number · cadence covered by the data · evidence cited</span></p>
+  <form method="post" action="/contract/create" class="row">
+    <input type="hidden" name="q1" value="{{ answers.q1 }}"><input type="hidden" name="q2" value="{{ answers.q2 }}"><input type="hidden" name="q3" value="{{ answers.q3 }}">
+    <button class="go" type="submit">Save as version 1 and render the views</button>
+  </form>
+{% endif %}
+<pre class="yaml">{{ proposal.yaml }}</pre>
+{% endif %}
+{% endblock %}

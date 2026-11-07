@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Role contracts{% endblock %}</title>
+<link rel="stylesheet" href="/static/app.css"><script src="/static/app.js" defer></script></head>
+<body>
+<header class="top">
+  <h1>Role contracts that generate dashboards</h1>
+  <nav class="beats">
+    {% for n, label, href in [(1,'1 Request','/'),(2,'2 Questions','/interview'),(3,'3 Contract','/contract'),(4,'4 Consolidate','/consolidate'),(5,'5 Shift lead','/shift'),(6,'6 Export','/export')] %}
+    <a href="{{ href }}" class="{{ 'on' if beat==n }}">{{ label }}</a>{% endfor %}
+    <a href="/audit" class="{{ 'on' if path=='/audit' }}">Audit log</a>
+  </nav>
+  <span class="counter" id="counter" title="Views are configuration over a contract. They never count as assets.">Assets: <b>{{ counters.assets }}</b>, Views: <b>{{ counters.views }}</b></span>
+  <form method="post" action="/reset" style="margin:0"><button class="ghost" title="Start the demo from zero" style="padding:.15rem .5rem;font-size:.8rem">Reset</button></form>
+</header>
+<main>{% block body %}{% endblock %}
+<footer>Data: synthetic data pack from the organizer. Role list, formulas, interview answers and cached texts are curated and marked. Nothing here is a real plant, person or number from a plant.</footer>
+</main>
+<div class="toast" id="toast" role="status"></div>
+</body></html>

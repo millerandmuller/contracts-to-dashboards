@@ -36,7 +36,7 @@ def pair_rows(cat: Catalog, c: dict) -> list[dict]:
         rows.append({"pair": f"{pid}/{m}", "market": m, "market_name": cat.markets.loc[m, "market_name"],
                      "series": s, "latest": last, "status": status_of(last, thr), "escalated": below2,
                      "last_kind": s[-1]["kind"], "month": s[-1]["month"]})
-    return sorted(rows, key=lambda r: (STATUS_ORDER[r["status"]], r["latest"] if r["latest"] is not None else 99))
+    return sorted(rows, key=lambda r: (not r["escalated"], STATUS_ORDER[r["status"]], r["latest"] if r["latest"] is not None else 99))
 
 
 def neighbour_values(cat: Catalog, c: dict, pair: str) -> list[dict]:

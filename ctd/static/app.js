@@ -1,0 +1,11 @@
+// Small helpers: post a form action, then re-render the stage from the server. State lives in SQLite.
+function toast(msg){const t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.style.display='block';clearTimeout(window.__tt);window.__tt=setTimeout(()=>t.style.display='none',5000)}
+async function act(url,data,after){
+  const fd=new FormData();Object.entries(data||{}).forEach(([k,v])=>fd.append(k,v));
+  const r=await fetch(url,{method:'POST',body:fd});let j={};try{j=await r.json()}catch(e){}
+  if(!r.ok||j.ok===false){toast(j.error||'That did not work.');return false}
+  if(after)await after(j);return true}
+async function refreshStage(){
+  const r=await fetch('/contract?fragment=1');if(!r.ok)return;
+  document.getElementById('stage').innerHTML=await r.text();
+  const c=await (await fetch('/counter.json')).json();const el=document.getElementById('counter');if(el)el.innerHTML=`Assets: <b>${c.assets}</b>, Views: <b>${c.views}</b>`}

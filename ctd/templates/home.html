@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block body %}
+<h3>A request just arrived</h3>
+<div class="req">“{{ a.request_text }}”</div>
+{% if a.first_time %}
+<p class="lead">First time this is asked. We still search the catalog for what already exists.</p>
+{% endif %}
+{% for c in a.claims %}
+<div class="claim"><div class="n">{{ [a.requests|length, a.assets|length, a.stale_owners|length][loop.index0] }}</div>
+  <div class="t">{{ c.text }}</div><div class="cite">{{ c.cite.text() }}</div></div>
+{% endfor %}
+<div class="note">{{ explain.text }}
+  {% if explain.cached %}<span class="badge cached" title="The model was not used: {{ explain.why }}">cached</span>{% else %}<span class="badge" title="{{ explain.why }}">model</span>{% endif %}</div>
+
+<div class="two">
+<div>
+<h3>The {{ a.requests|length }} requests</h3>
+<table><tr><th>ID</th><th>Date</th><th>Product</th><th>Market</th><th>Status</th></tr>
+{% for r in a.requests %}<tr><td class="cite">{{ r.request_id }}</td><td>{{ r.request_date }}</td><td>{{ r.product_context }}</td><td>{{ r.market_context }}</td><td>{{ r.status }}</td></tr>{% endfor %}
+</table>
+<div class="cite">Business_Requests, {{ a.requests|length }} rows. Matching rule: same words, no model.</div>
+</div>
+<div>
+<h3>Assets that already carry the numbers</h3>
+<table><tr><th>Asset</th><th>Name</th><th>Owner</th></tr>
+{% for x in a.assets %}<tr><td class="cite">{{ x.asset_id }}</td><td>{{ x.name }}</td>
+<td>{% if x.owner_state=='active' %}<span class="badge good">active</span>{% else %}<span class="badge bad">{{ x.owner_state }}</span>{% endif %} <span class="cite">{{ x.owner_id }}</span></td></tr>{% endfor %}
+</table>
+<div class="cite">Analytics_Assets + Owners. Rule: active, name says supply or inventory, carries a needed official number as its main number.
+Numbers needed: {{ a.needed|join(', ') }}. Covered: {{ a.covered_kpis|length }}. Not covered: {{ a.uncovered_kpis|join(', ') or 'none' }}.</div>
+</div>
+</div>
+
+<p style="margin-top:1.4rem" class="row">
+  <a class="btn go" href="/interview?prepared=1">Ask the three questions instead</a>
+  <span class="cite">{{ rules['RULE-001'].rule_name }} (rule 1). {{ rules['RULE-008'].rule_name }} (rule 8).</span>
+</p>
+{% endblock %}

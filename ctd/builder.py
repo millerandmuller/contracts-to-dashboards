@@ -66,7 +66,7 @@ def propose(cat: Catalog, role: str, answers: dict, analysis: dict, product_name
             {"sheet": "Product_Market_Monthly", "ids": [f"{scope['product_id']}/{m}" for m in scope["markets"]], "claim": "monthly data, ten months"},
         ],
         "views": [
-            {"for_role": role, "focus_rule": "lead number first, worst pair first"},
+            {"for_role": role, "focus_rule": "lead number first, escalated pairs first, then worst"},
             {"for_role": escal, "focus_rule": "escalated pairs only"},
         ],
         "replaces": [],

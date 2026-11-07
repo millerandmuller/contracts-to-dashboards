@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="row"><h2 style="margin:0">{{ c.contract_id }} · version {{ c.version }}</h2>
+  <span class="cite">owner {{ c.owner_id }} (active, checked) · versions: {{ versions|join(', ') }}</span>
+  <span class="right row">
+    <button class="ghost" onclick="act('/contract/v2',{reason:'Added forecast accuracy as a neighbour number'},()=>location.reload())">Publish next version (add forecast accuracy)</button>
+  </span></div>
+<p class="lead" style="margin:.4rem 0 1rem">{{ c.decision }} Two views are drawn from this one contract. Neither is a copy.</p>
+<div id="stage">{% include "_stage.html" %}</div>
+<h3>The contract itself</h3>
+<details><summary class="cite">Show contract {{ c.contract_id }} v{{ c.version }} (YAML)</summary><pre class="yaml">{{ yaml }}</pre></details>
+<h3>Last changes</h3>
+<table><tr><th>When</th><th>Who</th><th>What</th><th>Why</th></tr>{% for a in audit %}<tr><td class="cite">{{ a.at[11:16] }}</td><td>{{ a.actor }}</td><td>{{ a.action }} <span class="cite">{{ a.subject }}</span></td><td>{{ a.reason }}</td></tr>{% endfor %}</table>
+{% endblock %}

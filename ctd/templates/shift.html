@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="row"><h2 style="margin:0">A different role asks for a view</h2>
+ <form method="get" action="/shift" class="right row"><select name="role" onchange="this.form.submit()" style="width:auto">{% for r in roles %}<option {{ 'selected' if r==role }}>{{ r }}</option>{% endfor %}</select></form></div>
+<p class="lead">{{ g.ontology.role }} · {{ g.ontology.source }} role · catalog support: <b>{{ g.ontology.catalog_support }}</b></p>
+<h3>Her three questions</h3>
+{% for q in g.questions %}<div class="claim"><div class="t">{{ q.text }}</div></div>{% endfor %}
+
+{% if g.supported %}
+<div class="passed">This role has catalog support. <a href="/interview">Build its contract</a> the same way.</div>
+{% else %}
+<div class="blocked"><b>Nothing was built.</b> {{ text.text }}
+  {% if text.cached %}<span class="badge cached" title="{{ text.why }}">cached</span>{% endif %}</div>
+<h3>What is missing</h3>
+<table><tr><th>Kind</th><th>Missing</th><th>Checked</th></tr>
+{% for m in g.missing %}<tr><td>{{ m.kind }}</td><td>{{ m.what }}</td><td class="cite">{{ m.checked }}</td></tr>
+{% else %}<tr><td colspan="3">This role has no catalog support in the role list.</td></tr>{% endfor %}</table>
+<h3>How the handover would look</h3>
+<div class="ho open"><div class="row"><span class="state">open</span> <b>{{ preview.from_role }} → {{ preview.to_role }}</b></div>
+<div>Asked: <i>{{ preview.requested_action }}</i></div><div class="cite">No numbers. {{ preview.note }}</div></div>
+{% endif %}
+{% endblock %}
