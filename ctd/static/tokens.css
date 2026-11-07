@@ -107,3 +107,64 @@ table.bypair td,table.nbr td{padding:3px 4px;border-bottom:1px solid var(--line)
 .lastaudit{color:var(--ink);font-size:12px}
 .legend{max-width:60ch}
 @media(max-width:1000px){.cards,.zones{grid-template-columns:1fr}}
+/* header figures: label above, number below, PL grey, dPL bar last (pages 4, 7, 10) */
+.pagemeta{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.hfigs{display:flex;gap:18px;align-items:flex-end}
+.hgrp{display:flex;gap:14px;align-items:flex-end}
+.hgrp+.hgrp{border-left:1px solid var(--line);padding-left:18px}
+.hfig{text-align:right}
+.hl{font-size:10px;letter-spacing:.06em;color:var(--ctx);white-space:nowrap}
+.hv{font-size:24px;font-weight:600;line-height:1.1;color:var(--ink);white-space:nowrap}
+.hv.pl{color:var(--ctx)}.hv .hu{font-size:12px;font-weight:400;color:var(--ctx)}
+.hbar{width:66px;height:8px;margin:0 0 7px auto;border-left:1px solid var(--ink)}
+.hbar i{display:block;height:100%}.hbar i.bad{background:var(--bad)}.hbar i.good{background:var(--good)}
+/* page split: main column and a narrow evidence column */
+.split{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:28px}
+.split>*{min-width:0}
+.sidec{border-left:1px solid var(--line);padding-left:20px}
+.reqbox{border:1px solid var(--navy);padding:10px 16px 12px;margin-bottom:12px}
+.reqbox .req{border:0;padding:0;margin:4px 0 0;font-size:20px;max-width:none}
+.seclabel{display:flex;justify-content:space-between;gap:12px;font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--ink);border-bottom:1px solid var(--navy);padding-bottom:4px;margin:12px 0 0}
+.seclabel span+span{font-weight:400;letter-spacing:0;color:var(--ctx)}
+.seclabel0{font-size:11px;font-weight:600;letter-spacing:.06em}
+.krow{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) 9rem;gap:12px;border-bottom:1px solid var(--line);padding:8px 0;font-size:13px}
+.kh{font-weight:600}
+.kids{font-size:12px;line-height:1.5}
+.ksheet{color:var(--ctx);font-size:12px;text-align:right}
+.actbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:16px 0 4px;padding-top:12px;border-top:1px solid var(--line)}
+.btn.na,span.btn.na{background:#fff;color:var(--ctx);border:1px solid var(--line);cursor:not-allowed}
+table.acpl td,table.acpl th{padding:4px 4px}
+.dbar{display:inline-block;width:80px;height:8px;border-left:1px solid var(--ink);vertical-align:middle}
+.dbar i{display:block;height:100%}.dbar i.bad{background:var(--bad)}.dbar i.good{background:var(--good)}
+.lead2{font-size:14px;margin:14px 0 6px;border-top:1px solid var(--line);padding-top:10px}
+ol.next{margin:6px 0 10px 1.2rem;padding:0;font-size:13px;line-height:1.6}
+.caption{border:1px solid var(--navy);padding:6px 8px;font-size:12px;color:var(--navy);margin:10px 0}
+.footline{display:flex;justify-content:space-between;gap:24px;border-top:1px solid var(--navy);margin-top:16px;padding-top:6px;font-size:11px;color:var(--ctx);font-family:var(--mono)}
+.footline>div:first-child{max-width:75%}
+@media(max-width:1000px){.split{grid-template-columns:1fr}.sidec{border:0;padding:0}.krow{grid-template-columns:1fr}}
+.kids span{white-space:nowrap}
+/* contract card (page 7) */
+table.fields th{width:11rem;text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:400;color:var(--ctx);vertical-align:top;padding:7px 8px 7px 0}
+table.fields td{font-size:13px;padding:7px 0;vertical-align:top}
+table.ev{font-size:12px;margin-bottom:6px}
+table.ev th{text-transform:none;letter-spacing:0;font-weight:400}
+table.ev td{vertical-align:top;padding:4px}
+.pagemeta .row{flex-wrap:nowrap;gap:12px;align-items:flex-end}
+table.ev td.mono{white-space:nowrap}table.ev td.ids{white-space:normal}
+/* consolidation (page 10) */
+.verdict{border:2px solid var(--ink);padding:6px 12px;text-align:left;white-space:normal;max-width:16rem;font-size:12px;color:var(--ink)}
+.verdict b{font-size:15px;color:var(--navy)}.verdict.bad{border-color:var(--bad)}
+.btn.small{min-height:30px;font-size:12px;padding:0 10px}
+.props{margin-bottom:6px}
+table.cases th{text-transform:none;letter-spacing:0;font-weight:400;font-size:11px}
+table.cases td{font-size:12.5px;white-space:nowrap}
+table.cases tr.flipline td{border-top:2px solid var(--bad);border-bottom:1px solid var(--bad)}
+table.cases tr.why td{white-space:normal;font-size:12.5px;border-bottom:2px solid var(--bad)}
+.badtext{color:var(--bad)}
+.mini{display:inline-block;width:28px;height:8px;vertical-align:middle}
+.mini i{display:block;height:100%}.mini i.bad{background:var(--bad)}.mini i.good{background:var(--good)}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:8px 0}
+.choice{border:1px solid var(--navy);padding:12px 14px}.choice p{margin:8px 0 0;font-size:13px}
+.auditpre{display:grid;grid-template-columns:9rem 14rem minmax(0,1fr) minmax(0,1.2fr) auto;gap:14px;align-items:end;padding:8px 0;font-size:12.5px}
+.rlabel{font-size:11px;color:var(--ctx)}
+.decided{border-left:3px solid var(--navy);background:var(--tint);padding:8px 12px;margin:8px 0;font-size:13px}

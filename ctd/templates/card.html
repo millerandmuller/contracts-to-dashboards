@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "_macros.html" import figs as hfigs %}
+{% block kicker %}REQUEST · CONTRACT · <span class="mono">{{ c.contract_id }} v{{ c.version }}</span> · ● ACTIVE · OWNER <span class="mono">{{ c.owner_id }}</span> {{ owner_state|upper }}, CHECKED IN CODE{% endblock %}
+{% block question %}{{ v.question }}{% endblock %}
+{% block pagemeta %}<div class="row">{{ hfigs(figs) }}<a class="btn go" href="/contract">Render views</a><a class="btn ghost" href="/export">Export PBIP</a></div>{% endblock %}
+{% block body %}
+{% set ev = {} %}{% for e in c.evidence %}{% set _ = ev.update({e.sheet: loop.index}) %}{% endfor %}
+<div class="split card2">
+<div class="mainc">
+  <div class="seclabel"><span>WHAT THIS RESPONSIBILITY IS</span><span>focus pair {{ v.focus.market_name if v.focus }} · {{ v.audit_line.observed }}</span></div>
+  <table class="fields">
+    <tr><th>Business question</th><td><b>{{ c.decision }}</b></td></tr>
+    <tr><th>How often</th><td>{{ c.cadence }} · the pack holds monthly numbers, so nothing faster is promised</td></tr>
+    <tr><th>Lead number</th><td><b>{{ v.lead_name }}</b>, {{ v.lead_plain }} <span class="mono ctxc">{{ c.lead_kpi.kpi_id }}</span> <span class="fnr">[{{ ev.KPI_Catalog }}]</span><br>
+      PL {{ v.thr.amber|fmt(1) }} {{ v.thr.unit }} · unfavourable when ΔPL is below 0 · far below under {{ v.thr.red|fmt(1) }} · line set in answer 2, not a budget</td></tr>
+    <tr><th>Next to it ({{ v.neighbours|length }})</th><td>{% for n in v.neighbours %}{{ n.name }}, {{ n.plain }} <span class="mono ctxc">{{ n.kpi_id }}</span> <span class="fnr">[{{ ev.KPI_Catalog }}]</span>{{ '' if n.series else ' · one value in the pack, no monthly line' }}<br>{% endfor %}</td></tr>
+    <tr><th>Watches</th><td>{{ c.scope.product_name }} in {% for m in c.scope.markets %}<span class="mono">{{ m }}</span>{{ ', ' if not loop.last }}{% endfor %} <span class="fnr">[{{ ev.Product_Market_Monthly }}]</span> · asked in <span class="fnr">[{{ ev.Business_Requests }}]</span></td></tr>
+    <tr><th>Before you</th><td>{% for r in c.upstream_roles %}{{ r }}{{ ', ' if not loop.last }}{% else %}nobody named{% endfor %}</td></tr>
+    <tr><th>After you</th><td>{{ c.downstream_roles|join(', ') }}</td></tr>
+    <tr><th>You may</th><td>{{ c.permitted_action }}<br><span class="ctxc">not yours: {{ not_yours }}</span></td></tr>
+    <tr><th>When stuck, hand over to</th><td>{{ c.escalation_to }} · when the {{ c.escalation_when }} · answer due within {{ window }} h · overdue is shown, never hidden</td></tr>
+    <tr><th>Views</th><td>{% for x in c.views %}{{ x.for_role }}{{ ' · ' if not loop.last }}{% endfor %} <span class="ctxc">· configuration only, not assets</span></td></tr>
+  </table>
+</div>
+<aside class="sidec">
+  <div class="seclabel"><span>EVIDENCE</span></div>
+  <table class="ev"><tr><th></th><th>what</th><th>sheet</th><th>records</th></tr>
+  {% for e in c.evidence %}<tr><td class="fnr">[{{ loop.index }}]</td><td>{{ e.claim }}</td><td class="mono">{{ e.sheet }}</td><td class="mono ids">{{ e.ids[:2]|join(', ') }}{% if e.ids|length > 2 %} … ({{ e.ids|length }}){% endif %}</td></tr>{% endfor %}
+  <tr><td class="fnr">[{{ c.evidence|length + 1 }}]</td><td>owner is active</td><td class="mono">Owners</td><td class="mono">{{ c.owner_id }}</td></tr></table>
+  <div class="seclabel"><span>REPLACES</span><span>{{ c.replaces|length }} retired so far</span></div>
+  <table class="ev">{% for p in props %}<tr><td class="mono">{{ p.retire }}</td><td>{{ p.name }}; owner <span class="mono">{{ p.owner }}</span> {{ p.owner_state }} ·
+    {% if p.retire in c.replaces %}retired in this contract{% elif p.decided %}kept as {{ p.decided[-1].choice|replace('_',' ') }}: {{ p.decided[-1].reason }}{% else %}candidate, needs the preservation test before it can be merged <a href="/consolidate?p={{ p.id }}">{{ p.id }}</a>{% endif %}</td></tr>{% endfor %}</table>
+  <div class="seclabel"><span>CHANGE LOG</span><span>append-only</span></div>
+  <table class="ev"><tr><th>version</th><th>time</th><th>who</th><th>reason</th></tr>
+  {% for e in c.change_log %}<tr><td class="mono">v{{ e.version }}</td><td class="mono">{{ e.at[:16]|replace('T',' ') }}</td><td>{{ e.by }}</td><td>{{ e.reason }}</td></tr>{% endfor %}</table>
+</aside>
+</div>
+<div class="footline"><div>[n] = evidence line n on the right · all records: {% for e in c.evidence %}{{ e.sheet }} {{ e.ids|join(', ') }}{{ ' · ' if not loop.last }}{% endfor %}</div>
+  <div>Every field above is part of the version. Changing one creates v{{ c.version + 1 }}, with name, time and reason. <a href="/audit">audit log</a></div></div>
+{% endblock %}

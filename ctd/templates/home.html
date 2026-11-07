@@ -1,43 +1,49 @@
 {% extends "base.html" %}
-{% block kicker %}REQUEST · INBOX{% endblock %}
+{% from "_macros.html" import figs, caption %}
+{% block kicker %}REQUEST · INBOX · {{ a.requests|length }} EARLIER ASKS IN Business_Requests{% endblock %}
 {% block question %}Is a new dashboard the right answer to this request?{% endblock %}
+{% block pagemeta %}{{ figs(inbox.figs) }}{% endblock %}
 {% block body %}
-<h3>A request just arrived</h3>
-<div class="req">“{{ a.request_text }}”</div>
-{% if a.first_time %}
-<p class="lead">First time this is asked. We still search the catalog for what already exists.</p>
-{% endif %}
-{% for c in a.claims %}
-<div class="claim"><div class="n">{{ [a.requests|length, a.assets|length, a.stale_owners|length][loop.index0] }}</div>
-  <div class="t">{{ c.text }}</div><div class="cite">{{ c.cite.text() }}</div></div>
-{% endfor %}
-<div class="note" id="explain">{{ explain.text }}
-  {% if explain.cached %}<span class="badge cached" title="The model was not used: {{ explain.why }}">cached</span>{% else %}<span class="badge" title="{{ explain.why }}">model</span>{% endif %}</div>
-
-{% if explain.live %}<script>
-fetch('/explain.json').then(r=>r.json()).then(j=>{if(j.cached)return;const e=document.getElementById('explain');e.firstChild.textContent=j.text+' ';const b=e.querySelector('.badge');if(b){b.textContent='model';b.classList.remove('cached')}}).catch(()=>{});
-</script>{% endif %}
-<div class="two">
-<div>
-<h3>The {{ a.requests|length }} requests</h3>
-<table><tr><th>ID</th><th>Date</th><th>Product</th><th>Market</th><th>Status</th></tr>
-{% for r in a.requests %}<tr><td class="cite">{{ r.request_id }}</td><td>{{ r.request_date }}</td><td>{{ r.product_context }}</td><td>{{ r.market_context }}</td><td>{{ r.status }}</td></tr>{% endfor %}
-</table>
-<div class="cite">Business_Requests, {{ a.requests|length }} rows. Matching rule: same words, no model.</div>
+<div class="split">
+<div class="mainc">
+  <div class="reqbox"><div class="ctx">from Supply Analytics Lead · <span class="chip chip-open"><span class="shape" aria-hidden="true">○</span> open</span></div>
+    <div class="req">“{{ a.request_text }}”</div></div>
+  {% if a.first_time %}<p class="lead">First time this is asked. We still search the catalog for what already exists.</p>{% endif %}
+  <div class="seclabel"><span>WHAT THE CATALOG ALREADY KNOWS · 30 S</span><span>every line: sheet and record IDs</span></div>
+  <div class="krow"><div class="kh">{{ a.claims[0].text }} <span class="fnr">[1]</span></div>
+    <div class="kids mono">{% for r in a.requests %}<span>{{ r.request_id }}</span> {% endfor %}</div><div class="ksheet">sheet Business_Requests</div></div>
+  <div class="krow"><div class="kh">{{ a.assets|length }} existing assets carry {{ a.covered_kpis|length }} of {{ a.needed|length }} numbers <span class="fnr">[2]</span></div>
+    <div><div class="kids mono">{% for x in a.assets %}<span>{{ x.asset_id }}</span> {% endfor %}</div>
+      <div class="ctx">covered: {{ inbox.covered_names|join(', ')|lower }} · not covered: {{ inbox.uncovered_names|join(', ')|lower or 'none' }}</div></div>
+    <div class="ksheet">sheets Analytics_Assets, Asset_KPI_Map</div></div>
+  <div class="krow"><div class="kh">{{ a.stale_owners|length }} of those assets belong to inactive owners <span class="fnr">[3]</span></div>
+    <div class="kids mono">{% for s in a.stale_owners %}{{ s.asset_id }} → {{ s.owner_id }} {{ s.state }}<br>{% endfor %}</div><div class="ksheet">sheet Owners</div></div>
+  <div class="krow"><div class="kh">{% if existing %}Contract {{ existing.contract_id }} v{{ existing.version }} covers this decision{% else %}No contract covers this decision yet{% endif %} <span class="fnr">[4]</span></div>
+    <div class="ctx">{% if existing %}owner {{ existing.owner_id }} · {{ existing.decision }}{% else %}checked against the contract store of this prototype. The pack itself holds no contracts.{% endif %}</div><div class="ksheet">contract store</div></div>
+  <div class="note" id="explain">{{ explain.text }}
+    {% if explain.cached %}<span class="badge cached" title="The model was not used: {{ explain.why }}">cached</span>{% else %}<span class="badge" title="{{ explain.why }}">model</span>{% endif %}</div>
+  {% if explain.live %}<script>
+  fetch('/explain.json').then(r=>r.json()).then(j=>{if(j.cached)return;const e=document.getElementById('explain');e.firstChild.textContent=j.text+' ';const b=e.querySelector('.badge');if(b){b.textContent='model';b.classList.remove('cached')}}).catch(()=>{});
+  </script>{% endif %}
+  <div class="actbar"><span class="seclabel0">ACT · 300 S</span>
+    <a class="btn go" href="/interview?prepared=1">Start the three questions</a>
+    {% if existing %}<a class="btn ghost" href="/contract/card">Reuse existing contract</a><span class="ctx">{{ existing.contract_id }} v{{ existing.version }} answers this request</span>
+    {% else %}<span class="btn na" aria-disabled="true">Reuse existing contract</span><span class="ctx">not available: no contract covers this decision yet [4]</span>{% endif %}
+  </div>
 </div>
-<div>
-<h3>Assets that already carry the numbers</h3>
-<table><tr><th>Asset</th><th>Name</th><th>Owner</th></tr>
-{% for x in a.assets %}<tr><td class="cite">{{ x.asset_id }}</td><td>{{ x.name }}</td>
-<td>{% if x.owner_state=='active' %}<span class="badge good">active</span>{% else %}<span class="badge bad">{{ x.owner_state }}</span>{% endif %} <span class="cite">{{ x.owner_id }}</span></td></tr>{% endfor %}
-</table>
-<div class="cite">Analytics_Assets + Owners. Rule: active, name says supply or inventory, carries a needed official number as its main number.
-Numbers needed: {{ a.needed|join(', ') }}. Covered: {{ a.covered_kpis|length }}. Not covered: {{ a.uncovered_kpis|join(', ') or 'none' }}.</div>
+<aside class="sidec">
+  <div class="seclabel"><span>CATALOG, AC VS PL</span></div>
+  <table class="acpl"><tr><th>measure</th><th class="num">AC</th><th class="num">PL</th><th>ΔPL</th></tr>
+  {% for r in inbox.table %}<tr><td>{{ r.measure }} <span class="fnr">[{{ loop.index + 4 }}]</span></td><td class="num"><b>{{ r.ac }}</b></td><td class="num ctxc">{{ r.pl }}</td>
+    <td><span class="dbar"><i class="bad" style="width:{{ r.bar }}%"></i></span></td></tr>{% endfor %}</table>
+  <div class="ctx">PL = what the pack's own governance rule asks for: {% for r in inbox.table %}{{ r.rule }}{{ ', ' if not loop.last }}{% endfor %}. Not a budget. Bars share one scale.</div>
+  <p class="lead2">Instead of a {{ a.requests|length + 1 }}th dashboard among {{ inbox.assets_total }} assets in the catalog, this request becomes <b>one contract</b> for one responsibility. The views are generated from it and do not count as new assets.</p>
+  <div class="seclabel"><span>WHAT HAPPENS NEXT</span></div>
+  <ol class="next"><li>three plain questions to the person who asked</li><li>the answers become a contract, with an active owner</li><li>the contract renders the views, and exports to Power BI</li></ol>
+  {{ caption(rules) }}
+</aside>
 </div>
-</div>
-
-<p style="margin-top:1.4rem" class="row">
-  <a class="btn go" href="/interview?prepared=1">Ask the three questions instead</a>
-  <span class="cite">{{ rules['RULE-001'].rule_name }} (rule 1). {{ rules['RULE-008'].rule_name }} (rule 8).</span>
-</p>
+<div class="footline"><div>[1] Business_Requests · {{ a.requests|map(attribute='request_id')|join(', ') }} · [2] Analytics_Assets · {{ a.assets|map(attribute='asset_id')|join(', ') }}, rule: active, name says supply or inventory, carries a needed number as its main number · [3] Owners · status field · [4] contract store of this prototype
+  {% for r in inbox.table %} · [{{ loop.index + 4 }}] {{ r.cite }}{% endfor %}</div>
+  <div>AC actual · PL line set by a rule of the pack · ΔPL difference · red unfavourable, green favourable</div></div>
 {% endblock %}

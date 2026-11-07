@@ -44,7 +44,37 @@ def home(request: Request):
     ex = {"text": fx["cached"]["explain_cluster"], "cached": True, "why": "shown first, model text swaps in if it answers", "live": not gateway.OFFLINE}
     contradictions = [r for r in a["requests"] if False]  # filled by the catalog for requests with conflicting tags; none in this cluster
     return html("home.html", request, 1, a=a, explain=ex, contradictions=contradictions, rules=cat.rules(),
-                existing=contracts.latest(CID))
+                existing=contracts.latest(CID), inbox=_inbox(cat, a))
+
+
+def _bar(ac: float, pl: float, top: float) -> int:
+    return 0 if not top else max(2, round(abs(ac - pl) / top * 100))
+
+
+def _inbox(cat, a: dict) -> dict:
+    """Header figures and the catalog table for the inbox. Every AC is counted from the pack; every PL is what a rule of the pack asks for."""
+    n_req = len(a["requests"])
+    kpi_name = lambda k: str(cat.kpis.loc[k, "canonical_metric"])  # noqa: E731
+    states = [cat.owner_state(o) for o in cat.assets.owner_id]
+    no_owner = sum(1 for s in states if s != "active")
+    not_canon = int((cat.kpis.definition_status != "canonical").sum())
+    rows = [  # measure, AC, PL, rule that sets PL, footnote text
+        ("This request, last 3 months", n_req, 1, "RULE-001", "Business_Requests: " + ", ".join(r["request_id"] for r in a["requests"])),
+        ("Assets without an active owner", no_owner, 0, "RULE-003", f"Analytics_Assets + Owners: owner status, {states.count('inactive')} inactive, {states.count('missing')} missing"),
+        ("Numbers with more than one definition", not_canon, 0, "RULE-002", f"KPI_Catalog: definition_status not canonical, {not_canon} of {len(cat.kpis)}"),
+    ]
+    top = max(abs(r[1] - r[2]) for r in rows) or 1
+    table = [{"measure": m, "ac": ac, "pl": pl, "rule": rule, "bar": _bar(ac, pl, top), "cite": cite} for m, ac, pl, rule, cite in rows]
+    first = a["requests"][0]["request_date"] if a["requests"] else ""
+    return {
+        "figs": [[{"label": "SAME REQUEST, AC", "value": n_req}, {"label": "PL", "value": 1, "cls": "pl"},
+                  {"label": "ΔPL", "value": f"+{n_req - 1}" if n_req > 1 else str(n_req - 1)}, {"label": "ΔPL, BAR", "bar": min(100, (n_req - 1) * 10), "fav": n_req <= 1}],
+                 [{"label": "NUMBERS COVERED", "value": len(a["covered_kpis"]), "unit": f"of {len(a['needed'])}"},
+                  {"label": "INACTIVE OWNERS", "value": len(a["stale_owners"]), "unit": f"of {len(a['assets'])}"}]],
+        "first_month": first[:7], "table": table, "assets_total": len(cat.assets),
+        "covered_names": [kpi_name(k) for k in a["covered_kpis"]], "uncovered_names": [kpi_name(k) for k in a["uncovered_kpis"]],
+        "asset_types": cat.assets.asset_type.value_counts().to_dict(),
+    }
 
 
 # ---- beat 2: three questions ---------------------------------------------------------
@@ -124,6 +154,26 @@ def contract_page(request: Request, fragment: int = 0):
     return html("_stage.html" if fragment else "contract.html", request, 3, **s)
 
 
+@app.get("/contract/card", response_class=HTMLResponse)
+def contract_card(request: Request):
+    """The contract itself, as one page: what the responsibility is, the evidence, what it replaces, every version."""
+    cat = get_catalog()
+    c = contracts.latest(CID)
+    if not c:
+        return RedirectResponse("/interview?prepared=1", status_code=303)
+    v = render.view_model(cat, c, c["role"])
+    k = v["kpi"]
+    figs = [[{"label": "STOCK COVER, AC", "value": f"{k['ac']:.1f}", "unit": "wk"}, {"label": "PL", "value": f"{k['pl']:.1f}", "cls": "pl"},
+             {"label": "ΔPL", "value": render.env.filters["signed"](k["d"], 1)}, {"label": "ΔPL %", "value": render.env.filters["signed"](k["pct"], 0) + " %"},
+             {"label": "ΔPL, BAR", "bar": min(100, round(abs(k["pct"]))), "fav": k["fav"]}]] if k else []
+    onto = interview.ontology_by_role()
+    props = [{**p, "decided": store.decisions(f"consolidation:{p['id']}"), "name": cat.assets.loc[p["retire"], "asset_name"],
+              "owner": cat.assets.loc[p["retire"], "owner_id"], "owner_state": cat.owner_state(cat.assets.loc[p["retire"], "owner_id"])}
+             for p in preserve.config()["proposals"]]
+    return html("card.html", request, 3, c=c, v=v, figs=figs, not_yours=onto[c["escalation_to"]]["example_action"],
+                props=props, window=handovers.RESPONSE_HOURS, owner_state=cat.owner_state(c["owner_id"]))
+
+
 @app.post("/contract/v2")
 def contract_v2(reason: str = Form("Added forecast accuracy as a neighbour number")):
     cat = get_catalog()
@@ -170,7 +220,8 @@ def consolidate(request: Request, p: str = "CONS-1"):
     if p not in {x["id"] for x in preserve.config()["proposals"]}:
         p = "CONS-1"
     res = preserve.run(get_catalog(), c, p)
-    return html("consolidate.html", request, 4, c=c, res=res, pid=p, proposals=preserve.config()["proposals"], audit=store.audit_rows(6))
+    return html("consolidate.html", request, 4, c=c, res=res, pid=p, proposals=preserve.config()["proposals"], audit=store.audit_rows(6),
+                rules=get_catalog().rules())
 
 
 @app.post("/consolidate/{pid}/decide")

@@ -1,0 +1,8 @@
+{# Header figures after the design reference: label above, number below, PL in grey, the dPL bar last. Every block has a footnote or a definition on the same page. #}
+{% macro figs(groups) %}<div class="hfigs">{% for g in groups %}<div class="hgrp">{% for f in g %}
+  {% if f.bar is defined %}<div class="hfig"><div class="hl">{{ f.label }}</div><div class="hbar" aria-hidden="true"><i class="{{ 'good' if f.fav else 'bad' }}" style="width:{{ f.bar }}%"></i></div></div>
+  {% else %}<div class="hfig"><div class="hl">{{ f.label }}</div><div class="hv {{ f.cls or '' }}">{{ f.value }}{% if f.unit %}<span class="hu"> {{ f.unit }}</span>{% endif %}</div></div>{% endif %}
+{% endfor %}</div>{% endfor %}</div>{% endmacro %}
+
+{# Rule names come from the pack's Governance_Rules sheet, never typed in. #}
+{% macro caption(rules) %}<div class="caption" data-caption>RULE-001 {{ rules['RULE-001'].rule_name|lower }} · RULE-008 {{ rules['RULE-008'].rule_name|lower }}: cite the evidence · IBCS notation: AC actual, PL line, ΔPL difference</div>{% endmacro %}

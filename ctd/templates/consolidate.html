@@ -1,39 +1,56 @@
 {% extends "base.html" %}
-{% block kicker %}GOVERNANCE · CONSOLIDATION{% endblock %}
-{% block question %}Retire a duplicate? The test runs first.{% endblock %}
+{% from "_macros.html" import figs as hfigs, caption %}
+{% block kicker %}GOVERNANCE · CONSOLIDATION · <span class="mono">{{ c.contract_id }} v{{ c.version }}</span> · TEST RUN <span class="mono">{{ pid }}</span>{% endblock %}
+{% block question %}Can {{ res.proposal.retire }} be retired into {{ res.proposal.keep }} without changing a decision?{% endblock %}
+{% block pagemeta %}{% set flipped = res.rows|selectattr('flipped')|list %}<div class="row">{{ hfigs([[{'label': 'CASES REPLAYED', 'value': res.rows|length}, {'label': 'DECISIONS FLIPPED, AC', 'value': flipped|length}, {'label': 'PL', 'value': 0, 'cls': 'pl'},
+  {'label': 'ΔPL', 'value': '+' ~ flipped|length if flipped else '±0'}, {'label': 'ΔPL, BAR', 'bar': [100, flipped|length * 25]|min, 'fav': not flipped}]]) }}
+  {% if res.blocked %}<div class="verdict bad"><b>Blocked. Affected role: {{ res.affected_role }}.</b><br><span>nothing is merged until a person decides</span></div>
+  {% else %}<div class="verdict"><b>Passed.</b><br><span>every pair keeps its answer</span></div>{% endif %}</div>{% endblock %}
 {% block body %}
-<p class="lead">{{ res.proposal.why }} We retire <b>{{ res.retire_asset }}</b> ({{ res.proposal.retire }}) and keep <b>{{ res.keep_asset }}</b> ({{ res.proposal.keep }}).</p>
-<p class="row">{% for p in proposals %}<a class="btn {{ '' if p.id==pid else 'ghost' }}" href="/consolidate?p={{ p.id }}">{{ p.id }}: {{ p.retire }} → {{ p.keep }}</a>{% endfor %}</p>
-<table><tr><th>Report</th><th>Counts stock weeks as</th></tr>
-<tr><td>{{ res.retire_asset }} (today)</td><td>{{ res.formula_labels[res.proposal.retire_formula] }}</td></tr>
-<tr><td>{{ res.keep_asset }} (would stay)</td><td>{{ res.formula_labels[res.proposal.keep_formula] }}</td></tr></table>
-<div class="cite">Formulas are synthetic [curated]. The data pack has none. The test mechanics are real.</div>
+{% set word = {'ok': 'no action', 'amber': 'act', 'red': 'act now', 'no data': 'no data'} %}
+{% set flipped = res.rows|selectattr('flipped')|list %}
+{% set pl = c.lead_kpi.threshold.amber %}
+<div class="row props">{% for p in proposals %}<a class="btn {{ 'go' if p.id==pid else 'ghost' }} small" href="/consolidate?p={{ p.id }}">{{ p.id }}: retire {{ p.retire }} into {{ p.keep }}</a>{% endfor %}
+  <span class="ctx">{{ res.proposal.why }}</span></div>
+<div class="seclabel"><span>CAUSE · 30 S · SAME DATA, BOTH FORMULAS</span><span>{{ res.proposal.retire }} ({{ res.retire_asset }}) would be retired; its numbers would be served from {{ c.contract_id }}</span></div>
+<table class="cases">
+  <tr><th>case</th><th>number</th><th>pair</th><th class="num">AC, {{ res.proposal.retire }} formula (today)</th><th class="num">PL</th><th>ΔPL · decision</th>
+    <th class="num">AC, {{ res.proposal.keep }} formula (after)</th><th class="num">PL</th><th>ΔPL · decision</th><th>result</th></tr>
+  {% for r in res.rows %}
+  <tr class="{{ 'flipline' if r.flipped }}"><td class="mono">FX-{{ '%02d' % loop.index }}</td><td>Stock cover</td><td class="mono">{{ r.pair }}</td>
+    <td class="num"><b>{{ r.before|fmt(2) }} wk</b></td><td class="num ctxc">{{ pl|fmt(1) }}</td>
+    <td><span class="mini"><i class="{{ 'good' if r.before >= pl else 'bad' }}" style="width:{{ [100, ((r.before - pl)|abs * 12)|round(0)]|min }}%"></i></span> {{ (r.before - pl)|signed(1) }} · {{ word[r.status_before] }}</td>
+    <td class="num"><b>{{ r.after|fmt(2) }} wk</b></td><td class="num ctxc">{{ pl|fmt(1) }}</td>
+    <td><span class="mini"><i class="{{ 'good' if r.after >= pl else 'bad' }}" style="width:{{ [100, ((r.after - pl)|abs * 12)|round(0)]|min }}%"></i></span> {{ (r.after - pl)|signed(1) }} · {{ word[r.status_after] }}</td>
+    <td>{% if r.hides_open_handover %}<b class="badtext">FLIPS · hides a live handover</b>{% elif r.hides_risk %}<b class="badtext">FLIPS · hides risk</b>{% elif r.flipped %}<b class="badtext">FLIPS · fails</b>{% else %}<span class="ctxc">same · passes</span>{% endif %}</td></tr>
+  {% if r.hides_open_handover %}<tr class="why"><td colspan="10">{{ r.market }}, pair {{ r.pair }}: below the line with today's formula, above it with the formula of {{ res.proposal.keep }}. Its handover is still {{ r.handover_state }}. The merge would hide it. <span class="fnr">[1]</span></td></tr>{% endif %}
+  {% endfor %}
+</table>
+<div class="ctx">{{ res.proposal.retire }} counts {{ res.formula_labels[res.proposal.retire_formula] }}. {{ res.proposal.keep }} counts {{ res.formula_labels[res.proposal.keep_formula] }}. Formulas are synthetic [curated]; the pack has none. The test mechanics are real. <span class="fnr">[2]</span></div>
 
-{% if res.blocked %}
-<div class="blocked"><b>Blocked.</b> After this merge, the {{ res.affected_role }} would read different answers than today.
-{% set hid = res.rows|selectattr('hides_open_handover')|list %}{% if hid %}<br><b>{{ hid[0].market }}</b> turns from below the line to above it, while its handover is still {{ hid[0].handover_state }}. The merge would hide it.{% endif %}</div>
-{% else %}
-<div class="passed"><b>Passed.</b> Every pair keeps its answer after the merge.</div>
-{% endif %}
-<table><tr><th>Pair</th><th class="num">Today</th><th class="num">After merge</th><th>Answer today</th><th>Answer after</th><th></th></tr>
-{% for r in res.rows %}<tr class="{{ 'flip' if r.flipped }}"><td>{{ r.market }} <span class="cite">{{ r.pair }}</span></td><td class="num">{{ r.before }}</td><td class="num">{{ r.after }}</td>
-<td class="st-{{ r.status_before }}">{{ r.status_before }}</td><td class="st-{{ r.status_after }}">{{ r.status_after }}</td>
-<td>{% if r.hides_open_handover %}<span class="badge bad">hides a live handover</span>{% elif r.hides_risk %}<span class="badge bad">hides risk</span>{% elif r.flipped %}<span class="badge">changes</span>{% else %}<span class="badge good">same</span>{% endif %}</td></tr>{% endfor %}</table>
-
+<div class="seclabel"><span>ACT · 300 S · A PERSON DECIDES</span><span>decision words: act = below the line, act now = below the red line</span></div>
 {% if res.decisions %}
-<h3>Decision</h3>{% for d in res.decisions %}<div class="note"><b>{{ d.choice|replace('_',' ') }}</b> by {{ d.by }} at {{ d.at[11:16] }}: {{ d.reason }}</div>{% endfor %}
+  {% for d in res.decisions %}<div class="decided"><b>{{ d.choice|replace('_',' ') }}</b> by {{ d.by }} at {{ d.at[11:16] }}: {{ d.reason }} · written to the <a href="/audit">audit log</a></div>{% endfor %}
 {% elif res.proposal.retire in c.replaces %}
-<div class="note">Already retired in the contract.</div>
+  <div class="decided">Already retired in the contract.</div>
 {% else %}
-<h3>A person decides</h3>
-<div class="row"><input type="text" id="why" placeholder="Why? (required)" style="max-width:34rem" value="{{ 'Different denominator. Keep the old report until the owners agree on one.' if res.blocked else 'Same answers on every pair.' }}">
-{% if res.blocked %}
- <button class="go" onclick="act('/consolidate/{{ pid }}/decide',{choice:'keep_exception',reason:document.getElementById('why').value},()=>location.reload())">Keep as documented exception</button>
- <button class="ghost" onclick="act('/consolidate/{{ pid }}/decide',{choice:'fix_mapping',reason:document.getElementById('why').value},()=>location.reload())">Fix the mapping and retire</button>
-{% else %}
- <button class="go" onclick="act('/consolidate/{{ pid }}/decide',{choice:'approve',reason:document.getElementById('why').value},()=>location.reload())">Retire {{ res.proposal.retire }}</button>
-{% endif %}</div>
+  <div class="choices">
+  {% if res.blocked %}
+    <div class="choice"><button class="ghost" onclick="act('/consolidate/{{ pid }}/decide',{choice:'keep_exception',reason:document.getElementById('why').value},()=>location.reload())">Keep as documented exception</button>
+      <p>{{ res.proposal.retire }} stays separate for now. The difference in counting is written to the audit log with your reason, and the asset keeps a visible note until it is retired.</p></div>
+    <div class="choice"><button class="go" onclick="act('/consolidate/{{ pid }}/decide',{choice:'fix_mapping',reason:document.getElementById('why').value},()=>location.reload())">Fix mapping and re-run</button>
+      <p>Count {{ res.proposal.keep }} the way {{ res.proposal.retire }} does today, run all {{ res.rows|length }} cases again. The merge only goes ahead when nothing flips.</p></div>
+  {% else %}
+    <div class="choice"><button class="go" onclick="act('/consolidate/{{ pid }}/decide',{choice:'approve',reason:document.getElementById('why').value},()=>location.reload())">Retire {{ res.proposal.retire }}</button>
+      <p>Every case keeps its decision. {{ res.proposal.retire }} is retired in a new version of the contract.</p></div>
+  {% endif %}
+  </div>
+  <div class="seclabel"><span>THIS LINE WILL BE WRITTEN TO THE AUDIT LOG</span></div>
+  <div class="auditpre"><span class="mono">now</span><span>{{ c.role }} <span class="mono">{{ c.owner_id }}</span></span><span>decision on {{ pid }} (retire {{ res.proposal.retire }})</span>
+    <label class="rlabel">reason (required)<input type="text" id="why" value="{{ 'Different denominator. Keep the old report until the owners agree on one.' if res.blocked else 'Same answers on every pair.' }}"></label>
+    <span class="mono">{{ c.contract_id }} v{{ c.version }}</span></div>
 {% endif %}
-<h3>Audit log</h3>
-<table>{% for a in audit %}<tr><td class="cite">{{ a.at[11:16] }}</td><td>{{ a.actor }}</td><td>{{ a.action }} <span class="cite">{{ a.subject }}</span></td><td>{{ a.reason }}</td></tr>{% endfor %}</table>
+{{ caption(rules) }}
+<div class="footline"><div>[1] Product_Market_Monthly {% for r in flipped %}{{ r.pair }}{{ ', ' if not loop.last }}{% endfor %}, latest month · handover records in the contract store · [2] formulas: data/formulas.yaml, curated and labelled · cases FX-01 … FX-{{ '%02d' % res.rows|length }} = the contract's pairs, latest month · assets {{ res.proposal.retire }}, {{ res.proposal.keep }} from Analytics_Assets</div>
+  <div>rule v{{ rule_version }} · <a href="/audit">audit log</a></div></div>
 {% endblock %}
