@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 DATA = Path(__file__).resolve().parent.parent / "data"
@@ -11,6 +12,7 @@ MODEL = os.environ.get("CTD_MODEL", "claude-sonnet-5-5")
 TIMEOUT_S = float(os.environ.get("CTD_LLM_TIMEOUT", "8"))
 OFFLINE = os.environ.get("CTD_OFFLINE", "0") == "1"
 _down_until = 0.0  # after a failed call, skip the model for a while so a dead network costs 8 s once, not on every page
+_pool = ThreadPoolExecutor(max_workers=2)  # lets a caller stop waiting at its deadline; the SDK timeout alone is per phase, not total
 
 SYSTEM = ("You write short plain-language text for people who work in shifts. Short sentences, no BI words. "
           "Use only the facts you are given. Never invent numbers or examples.")
@@ -52,7 +54,8 @@ def complete(task: str, facts: str, cached_text: str, timeout: float | None = No
         return {"text": cached_text, "cached": True, "why": why}
     global _down_until
     try:
-        return {"text": _ask(SYSTEM, f"Task: {task}\nFacts:\n{facts}", 300, timeout), "cached": False, "why": MODEL}
+        job = _pool.submit(_ask, SYSTEM, f"Task: {task}\nFacts:\n{facts}", 300, timeout)
+        return {"text": job.result(timeout=timeout or TIMEOUT_S), "cached": False, "why": MODEL}
     except Exception as e:  # noqa: BLE001 - any failure degrades to the fixture, visibly
         _down_until = time.time() + 120
         return {"text": cached_text, "cached": True, "why": f"{type(e).__name__}"}

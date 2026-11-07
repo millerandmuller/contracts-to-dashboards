@@ -7,7 +7,7 @@ os.environ["CTD_OFFLINE"] = "1"
 import pytest
 from fastapi.testclient import TestClient
 
-from ctd import contracts, preserve, store
+from ctd import contracts, store
 from ctd.app import app
 from ctd.catalog import get_catalog
 
@@ -66,7 +66,6 @@ def test_shift_lead_gets_questions_then_named_gap_and_no_rendering(client):
 
 
 def test_inactive_owner_contract_is_rejected():
-    c = contracts.latest("x") or None
     cat = get_catalog()
     from ctd import builder
     a = cat.analyze("We need a monthly supply-risk dashboard by medicine and country.")

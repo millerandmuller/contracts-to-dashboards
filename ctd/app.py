@@ -151,6 +151,19 @@ def contract_create(q1: str = Form(...), q2: str = Form(...), q3: str = Form(...
 
 
 # ---- beat 3: one contract, two views, handover ------------------------------------------
+def _audit(limit: int, curated: bool | None = None) -> list[dict]:
+    """Audit rows, each tagged when it belongs to the curated shift contract, so curated rows never read as the pack's.
+    curated=False keeps pack rows only, True curated rows only, None both."""
+    cur = {shiftdata.CID} | {h["handover_id"] for h in handovers.all_for(shiftdata.CID)}
+    rows = [r | {"curated": r["subject"].split(" ")[0] in cur} for r in store.audit_rows(limit)]
+    return rows if curated is None else [r for r in rows if r["curated"] == curated]
+
+
+def _last(curated: bool = False) -> dict | None:
+    """The closing line: the latest entry of this contract, never a visit to the refusal page."""
+    return next((a for a in _audit(40, curated) if a["action"] != "refusal_shown"), None)
+
+
 def _stage(request: Request, beat: int = 3):
     cat = get_catalog()
     c = contracts.latest(CID)
@@ -158,9 +171,8 @@ def _stage(request: Request, beat: int = 3):
         return None
     views = [render.view_model(cat, c, v["for_role"]) for v in c["views"] if v.get("kind", "kpi") == "kpi"]  # the IT view has its own page
     shown = "after" if any(h["state"] != "open" for h in handovers.all_for(CID) if h["to_role"] == c["escalation_to"]) else "before"
-    last = [a for a in store.audit_rows(20) if a["action"] != "refusal_shown"][:1]  # the closing line follows the contract, not a visit to the refusal page
-    return dict(c=c, views=views, versions=contracts.versions(CID), yaml=contracts.to_yaml(c), audit=store.audit_rows(8), shown=shown,
-                last_audit=last[0] if last else None)
+    return dict(c=c, views=views, versions=contracts.versions(CID), yaml=contracts.to_yaml(c), audit=_audit(40, False)[:8], shown=shown,
+                last_audit=_last())
 
 
 @app.get("/contract", response_class=HTMLResponse)
@@ -198,8 +210,7 @@ def it_page(request: Request):
     c = contracts.latest(CID)
     if not c:
         return RedirectResponse("/interview?prepared=1", status_code=303)
-    last = [a for a in store.audit_rows(20) if a["action"] != "refusal_shown"][:1]
-    return html("it.html", request, 5, c=c, v=it.view_model(cat, c), added=it.has_view(c), rules=cat.rules(), last_audit=last[0] if last else None)
+    return html("it.html", request, 5, c=c, v=it.view_model(cat, c), added=it.has_view(c), rules=cat.rules(), last_audit=_last())
 
 
 @app.post("/contract/it-view")
@@ -261,7 +272,7 @@ def consolidate(request: Request, p: str = "CONS-1"):
     if p not in {x["id"] for x in preserve.config()["proposals"]}:
         p = "CONS-1"
     res = preserve.run(get_catalog(), c, p)
-    return html("consolidate.html", request, 4, c=c, res=res, pid=p, proposals=preserve.config()["proposals"], audit=store.audit_rows(6),
+    return html("consolidate.html", request, 4, c=c, res=res, pid=p, proposals=preserve.config()["proposals"], audit=_audit(40, False)[:6],
                 rules=get_catalog().rules())
 
 
@@ -326,7 +337,10 @@ def shift(request: Request, role: str = "Shift Team Lead", step: int = 0):
 
 @app.post("/shift/curated/create")
 def shift_curated_create():
-    shiftdata.create()
+    try:
+        shiftdata.create()
+    except FileNotFoundError:
+        return JSONResponse({"ok": False, "error": "The curated shift data file is missing (data/curated/shifts.csv). Run data/curated/make_shifts.py."}, status_code=409)
     return RedirectResponse("/shift/curated", status_code=303)
 
 
@@ -338,8 +352,7 @@ def shift_curated(request: Request):
         return RedirectResponse("/shift", status_code=303)
     views = [shiftdata.view_model(c, v["for_role"]) for v in c["views"]]
     shown = "after" if any(h["state"] != "open" for h in handovers.all_for(shiftdata.CID)) else "before"
-    last = [a for a in store.audit_rows(20) if a["action"] != "refusal_shown"][:1]
-    return html("shift_curated.html", request, 5, c=c, views=views, shown=shown, last_audit=last[0] if last else None, sd=shiftdata)
+    return html("shift_curated.html", request, 5, c=c, views=views, shown=shown, last_audit=_last(curated=True), sd=shiftdata)
 
 
 # ---- beat 6: export -------------------------------------------------------------------------------
@@ -383,13 +396,14 @@ def _closing_card(c: dict, res: dict, again: dict, sm: dict) -> list[dict]:
 
 @app.get("/audit", response_class=HTMLResponse)
 def audit_page(request: Request):
-    rows = store.audit_rows(200)
+    rows = _audit(200)
     c = contracts.latest(CID)
     system = sum(1 for r in rows if r["actor"].startswith("system"))
     figs = [[{"label": "ENTRIES", "value": len(rows)}, {"label": "WITHOUT REASON, AC", "value": sum(1 for r in rows if not r["reason"].strip())},
              {"label": "PL", "value": 0, "cls": "pl"}],
             [{"label": "MANUAL EDITS TO VIEWS", "value": store.audit_count("view_edited")}, {"label": "VERSION", "value": f"v{c['version']}" if c else "–"}]]
-    return html("audit.html", request, 0, rows=rows, figs=figs, people=len(rows) - system, system=system)
+    return html("audit.html", request, 0, rows=rows, figs=figs, people=len(rows) - system, system=system,
+                curated=sum(1 for r in rows if r["curated"]), rules=get_catalog().rules())
 
 
 @app.post("/reset")

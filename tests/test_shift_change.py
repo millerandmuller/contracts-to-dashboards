@@ -64,3 +64,28 @@ def test_only_the_incoming_lead_acknowledges_and_both_cards_follow(client):
     page = client.get("/shift/curated").text
     assert page.count(f"Seen and taken over by {sd.IN}") == 2
     assert "state shown: <b>after acknowledgement</b>" in page
+
+
+def test_curated_rows_are_marked_and_kept_off_the_pack_pages(client):
+    client.post("/contract/create", data=ANS)
+    client.post("/shift/curated/create")
+    hid = handovers.all_for(sd.CID)[0]["handover_id"]
+    client.post(f"/handover/{hid}/ack", data={"actor": sd.IN})
+    audit = client.get("/audit").text
+    row = next(r for r in audit.split("<tr>") if "handover acknowledged" in r and hid in r)
+    assert sd.BADGE in row and "PL = what RULE-008" in audit
+    for page in ("/contract", "/it"):
+        main = client.get(page).text.split("<main>")[1]
+        assert hid not in main and sd.CID not in main  # the closing line and the change list follow the pack's contract
+    assert hid in client.get("/shift/curated").text.split('class="closer"')[1]
+
+
+def test_missing_curated_file_is_a_clear_message(client, monkeypatch, tmp_path):
+    monkeypatch.setattr(sd, "CSV", tmp_path / "gone.csv")
+    sd.data.cache_clear()
+    try:
+        r = client.post("/shift/curated/create")
+        assert r.status_code == 409 and "shifts.csv" in r.json()["error"]
+        assert sd.latest() is None
+    finally:
+        sd.data.cache_clear()  # the next test reads the real file again

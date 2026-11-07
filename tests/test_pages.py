@@ -69,3 +69,17 @@ def test_consolidation_caption_names_the_pack_rules(client):
     f = dict(figs(page))
     assert f["CASES REPLAYED"] == "4" and f["DECISIONS FLIPPED, AC"] == "3"
     assert "Blocked. Affected role: Launch Excellence Lead." in page
+
+
+def test_export_header_defines_pl():
+    from ctd import store as st
+    st.reset()
+    c = TestClient(app, follow_redirects=False)
+    c.post("/contract/create", data={"q1": "Which country needs stock this month. Once a month.", "q2": "Stock below four weeks. Then I flag the medicine and country for review.", "q3": "Launch Excellence Lead"})
+    assert "PL = no view edited by hand" in c.post("/export").text
+
+
+def test_change_column_is_plain_words():
+    from ctd.render import changed
+    assert changed('views: [{"for_role": "A; B"}] -> []; neighbour_kpis: [] -> ["x"]') == "views, numbers next to it changed"
+    assert changed("created") == "created"

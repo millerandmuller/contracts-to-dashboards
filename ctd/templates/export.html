@@ -25,6 +25,7 @@
       <pre class="code" id="card-visual">visualType: {{ sm.card_type }}
 bound to: Series[{{ sm.card_field }}]</pre></div>
   </div>
+  <div class="ctx">PL = no view edited by hand: every file is drawn from the contract. Not a budget.</div>
   <table class="fields props2"><tr><th>deterministic</th><td>same contract version → same files, byte for byte · sha256 {{ result.sha256[:12] }}…</td></tr>
     <tr><th>no manual edits</th><td>{{ 'no view was edited by hand' if manual_edits() == 0 else manual_edits() ~ ' manual edits, each named in the audit log' }}</td></tr>
     <tr><th>status</th><td><b>not yet opened in Power BI Desktop</b>; generated from the published PBIP/TMDL structure</td></tr></table>

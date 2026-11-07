@@ -1,13 +1,14 @@
 {% extends "base.html" %}
 {% from "_macros.html" import figs as hfigs %}
 {% block kicker %}GOVERNANCE · AUDIT LOG · APPEND ONLY · NEWEST FIRST{% endblock %}
-{% block question %}Who changed what on this contract, and why?{% endblock %}
+{% block question %}Who changed what, and why?{% endblock %}
 {% block pagemeta %}{{ hfigs(figs) }}{% endblock %}
 {% block body %}
 <div class="row filterrow"><label class="ctx" for="flt">filter</label><input type="text" id="flt" placeholder="who, what, reason, record" style="max-width:24rem" oninput="filterRows(this.value)">
   <span>people <b>{{ people }}</b></span><span>system <b>{{ system }}</b></span><span class="ctx">“system” rows act on behalf of a role, under rule v{{ rule_version }}</span></div>
+<div class="ctx">PL = what RULE-008 of the pack asks for ({{ rules['RULE-008'].rule_name|lower }}): no row without a reason, no view edited by hand. Not a budget.{% if curated %} {{ curated }} rows belong to the curated shift contract and carry its badge; they are not the pack's.{% endif %}</div>
 <table class="auditlog" id="auditlog"><tr><th>time</th><th>who</th><th>what</th><th>reason</th><th>change</th></tr>
-{% for a in rows %}<tr><td class="mono">{{ a.at[:16]|replace('T',' ') }}</td><td>{{ a.actor }}</td><td>{{ a.action|replace('_',' ') }} <span class="mono">{{ a.subject }}</span></td><td>{{ a.reason }}</td><td class="mono ctxc">{{ a.diff|truncate(140) }}</td></tr>{% endfor %}</table>
+{% for a in rows %}<tr><td class="mono">{{ a.at[:16]|replace('T',' ') }}</td><td>{{ a.actor }}</td><td>{{ a.action|replace('_',' ') }} <span class="mono">{{ a.subject }}</span>{% if a.curated %} <span class="badge curated">curated shift data, not from the pack, not from any plant</span>{% endif %}</td><td>{{ a.reason }}</td><td class="ctxc" title="{{ a.diff }}">{{ a.diff|changed }}</td></tr>{% endfor %}</table>
 <script>function filterRows(q){q=q.toLowerCase();document.querySelectorAll('#auditlog tr').forEach((tr,i)=>{if(i)tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none'})}</script>
 <div class="footline"><div>Every row has a name, a time and a reason; a row without a reason cannot be written (checked in code, and the table refuses updates and deletes).</div><div>rule v{{ rule_version }} · synthetic data pack</div></div>
 {% endblock %}

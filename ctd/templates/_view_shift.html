@@ -16,7 +16,7 @@
         <div><div class="kl">ΔPL %</div><div class="k24">{{ k.pct|signed(0) }} %</div></div>
         <div class="vbar" aria-hidden="true"><i class="{{ 'good' if k.fav else 'bad' }}" style="width:{{ [100, k.pct|abs|round(0)]|min }}%"></i></div>
       </div>
-      <div class="sent">{{ k.line }} stood still {{ k.ac|fmt(0) }} minutes ({{ k.reason }}). The line is {{ k.pl|fmt(0) }} minutes per shift, from answer 2. Previous shift: {{ k.prev|fmt(0) }} minutes. <span class="fnr">[1]</span></div>
+      <div class="sent">{{ k.line }} stood still {{ k.ac|fmt(0) }} minutes ({{ k.reason }}). Your limit is {{ k.pl|fmt(0) }} minutes stopped per shift, from answer 2. Previous shift: {{ k.prev|fmt(0) }} minutes. <span class="fnr">[1]</span></div>
       <div class="ctitle">Downtime per shift, {{ k.line }}, minutes · AC ■ PL □ · last {{ v.series|length }} shifts · E early, L late, N night</div>
       {{ columns(v.series, k.pl, 'shift-' ~ (1 if v.is_receiver else 0), scale_max=60, bad_above=True, dspan=40) }}
       <div class="ctx">ΔPL per shift · red unfavourable (above the line), green favourable</div>

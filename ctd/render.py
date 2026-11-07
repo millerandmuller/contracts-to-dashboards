@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import math
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -157,6 +158,22 @@ env.globals["manual_edits"] = lambda: store.audit_count("view_edited")
 env.filters["fmt"] = lambda v, d=1: "–" if v is None else (f"{v:,.{d}f}" if isinstance(v, float) else f"{v:,}")
 env.filters["signed"] = lambda v, d=0: ("−" if v < 0 else "+" if v > 0 else "±") + f"{abs(v):.{d}f}"
 env.filters["hhmm"] = lambda s: s[11:16] if s else ""
+
+_FIELD_WORDS = {"views": "views", "neighbour_kpis": "numbers next to it", "lead_kpi": "lead number", "cadence": "how often",
+                "escalation_to": "hand over to", "owner_id": "owner", "evidence": "evidence", "question": "business question"}
+
+
+def changed(diff: str) -> str:
+    """The audit 'change' column in plain words: which fields changed, not their JSON. The full diff stays in the row's tooltip."""
+    if not diff or diff == "created":
+        return diff or ""
+    keys = re.findall(r"(?:^|; )([a-z_]+): ", diff)
+    if not keys:
+        return diff
+    return ", ".join(_FIELD_WORDS.get(k, k.replace("_", " ")) for k in keys) + " changed"
+
+
+env.filters["changed"] = changed
 
 
 def sentence(role_view: str, kpi: dict, pair: dict, thr: dict) -> str:
