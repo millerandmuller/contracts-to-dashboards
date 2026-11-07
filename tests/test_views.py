@@ -167,7 +167,7 @@ def test_honest_line_says_so_when_no_refusal_was_shown(client):
     assert "no refusal was shown in this run" in page
 
 
-# ---- revision round: races, hostile model values, one contract per create -------------------------------
+# ---- races, hostile model values, one contract per create -------------------------------
 def test_parallel_exports_are_serialized_and_the_card_stays_true(client):
     from concurrent.futures import ThreadPoolExecutor
     client.post("/contract/create", data=ANS)

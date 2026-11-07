@@ -41,7 +41,6 @@ def home(request: Request):
     cat = get_catalog()
     a = cat.analyze(REQUEST)
     fx = gateway.fixture("interview_supply_analytics_lead.json")
-    facts = "\n".join(f"- {c.text} ({c.cite.text()})" for c in a["claims"])
     ex = {"text": fx["cached"]["explain_cluster"], "cached": True, "why": "shown first, model text swaps in if it answers", "live": not gateway.OFFLINE}
     contradictions = [r for r in a["requests"] if False]  # filled by the catalog for requests with conflicting tags; none in this cluster
     return html("home.html", request, 1, a=a, explain=ex, contradictions=contradictions, rules=cat.rules(),
@@ -112,7 +111,7 @@ def _stage(request: Request, beat: int = 3):
         return None
     views = [render.view_model(cat, c, v["for_role"]) for v in c["views"]]
     shown = "after" if any(h["state"] != "open" for h in handovers.all_for(CID)) else "before"
-    last = store.audit_rows(1)
+    last = [a for a in store.audit_rows(20) if a["action"] != "refusal_shown"][:1]  # the closing line follows the contract, not a visit to the refusal page
     return dict(c=c, views=views, versions=contracts.versions(CID), yaml=contracts.to_yaml(c), audit=store.audit_rows(8), shown=shown,
                 last_audit=last[0] if last else None)
 
@@ -220,7 +219,6 @@ def shift_json(role: str = "Shift Team Lead"):
 
 @app.get("/shift", response_class=HTMLResponse)
 def shift(request: Request, role: str = "Shift Team Lead", step: int = 0):
-    cat = get_catalog()
     if role not in interview.ontology_by_role():
         role = "Shift Team Lead"
     g, base, _ = _shift_text(role)

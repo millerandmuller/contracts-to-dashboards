@@ -80,7 +80,7 @@ MONTH_LETTER = "JFMAMJJASOND"
 def columns(series: list[dict], pl: float, uid: str = "c", slot: int = 26, up: int = 60, down: int = 34, scale_max: float = 10.0) -> Markup:
     """AC over PL columns, one slot per month, and the dPL bars under them with a zero line. Boxes only, no chart library.
     PL is the line set in the contract. Months the data pack marks forecast-like are hatched. Values are never interpolated."""
-    top = max([scale_max] + [p["value"] for p in series if p["value"] is not None])
+    top = max([scale_max, pl] + [p["value"] for p in series if p["value"] is not None])
     k = up / top
     kd = (down / 2 - 2) / 6.0  # dPL scale: +-6 weeks fill the lane
     n = len(series)

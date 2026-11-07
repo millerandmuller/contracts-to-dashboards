@@ -64,7 +64,7 @@ h2.role{margin:0;font-size:16px;font-weight:600;color:var(--navy)}
 .zones{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 .zcol{padding:8px 12px;min-width:0}
 .za{border-right:1px solid var(--line)}
-.zlabel{white-space:nowrap;display:flex;justify-content:space-between;gap:6px;font-size:10px;letter-spacing:.05em;color:var(--ctx);margin-bottom:4px}
+.zlabel{white-space:nowrap;display:flex;justify-content:space-between;gap:6px;font-size:11px;letter-spacing:.05em;color:var(--ctx);margin-bottom:4px}
 .zlabel.sub{margin-top:10px;border-top:1px solid var(--line);padding-top:6px}
 .ztitle{font-weight:600;font-size:13px}
 .kfig{display:flex;gap:10px;align-items:flex-end;margin:2px 0 4px}
@@ -78,7 +78,7 @@ h2.role{margin:0;font-size:16px;font-weight:600;color:var(--navy)}
 .ctitle{font-size:10.5px;color:var(--ctx);margin-bottom:2px}
 svg.cols{display:block;max-width:100%}
 .cols .pl{fill:#fff;stroke:var(--ink);stroke-width:1}.cols .ac{fill:var(--ink)}.cols .ac.fc{stroke:var(--ink);stroke-width:1}
-.cols .zero{stroke:var(--ink);stroke-width:1}.cols text{font:400 9px var(--sans);fill:var(--ctx)}.cols .gap{font-size:11px}
+.cols .zero{stroke:var(--ink);stroke-width:1}.cols text{font:400 10px var(--sans);fill:var(--ctx)}.cols .gap{font-size:11px}
 .ctx,.ctxc{color:var(--ctx);font-size:11px}.ctxc{font-size:inherit}
 table.bypair,table.nbr{font-size:12px}
 table.bypair td,table.nbr td{padding:3px 4px;border-bottom:1px solid var(--line)}
@@ -102,8 +102,8 @@ table.bypair td,table.nbr td{padding:3px 4px;border-bottom:1px solid var(--line)
 .dcard{border:1px solid var(--line);padding:6px 8px;font-size:12px}
 .dcard.infocus{border-left:4px solid var(--navy)}
 .zb{border-top:1px solid var(--ink);padding:8px 12px}
-.zf{padding:6px 12px 8px;margin:0;border-top:1px solid var(--line);font-family:var(--mono);font-size:10.5px;color:var(--ctx)}
-.closer{display:flex;justify-content:space-between;gap:24px;border-top:1px solid var(--navy);margin-top:10px;padding-top:6px;font-size:11px;color:var(--ctx)}
+.zf{padding:6px 12px 8px;margin:0;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--ctx)}
+.closer{display:flex;justify-content:space-between;gap:24px;border-top:1px solid var(--navy);margin-top:10px;padding-top:6px;font-size:12px;color:var(--ctx)}
 .lastaudit{color:var(--ink);font-size:12px}
 .legend{max-width:60ch}
 @media(max-width:1000px){.cards,.zones{grid-template-columns:1fr}}
