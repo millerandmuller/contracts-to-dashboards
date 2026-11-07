@@ -34,7 +34,8 @@
   {% else %}
     <form method="post" action="/contract/create" class="actbar">
       <input type="hidden" name="q1" value="{{ answers.q1 }}"><input type="hidden" name="q2" value="{{ answers.q2 }}"><input type="hidden" name="q3" value="{{ answers.q3 }}">
-      <button class="go" type="submit">Save as version 1 and render the views</button><span class="ctx">Asked once. Every later change is logged with name, time and reason.</span>
+      {% if existing %}<button class="go" type="submit">Open version {{ existing.version }}, already saved</button><span class="ctx">This page does not make a new version. Version {{ existing.version + 1 }} comes from "Publish next version" on the contract.</span>
+      {% else %}<button class="go" type="submit">Save as version 1 and render the views</button><span class="ctx">Asked once. Every later change is logged with name, time and reason.</span>{% endif %}
     </form>
     <div id="reading" data-live="{{ 1 if live else 0 }}">{% include "_reading.html" %}</div>
   {% endif %}

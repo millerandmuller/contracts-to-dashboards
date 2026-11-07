@@ -239,5 +239,5 @@ p.who{font-size:13px;color:var(--ctx);margin:6px 0 0}
 details.evidence{margin-top:28px;border-top:2px solid var(--navy);padding-top:6px}
 details.evidence>summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--navy)}
 /* interview: the example under a field is a button that fills that field */
-button.exfill{display:block;background:none;border:0;min-height:0;padding:2px 0;margin:0;font:400 11px var(--sans);color:var(--ctx);text-align:left;cursor:pointer}
+button.exfill{display:block;background:none;border:0;min-height:0;padding:2px 0;margin:0;font:400 13px var(--sans);color:var(--ctx);text-align:left;cursor:pointer}
 button.exfill:hover,button.exfill:focus-visible{color:var(--navy);text-decoration:underline}

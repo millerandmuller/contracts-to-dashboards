@@ -159,3 +159,15 @@ def test_each_example_line_fills_its_own_field_without_a_request(client):
     fill = js.split("button.exfill")[1].split("});")[0]
     assert "f.value=b.dataset.text" in fill and "fetch" not in fill and "submit" not in fill
     assert 'href="/interview?prepared=1" title="Loads the example answers for this role. Typing works the same.">Fill in with example answers</a>' in page
+
+
+def test_save_button_names_the_version_the_click_really_gives(client):
+    page = client.post("/interview", data=ANS).text
+    assert "Save as version 1 and render the views" in page
+    client.post("/contract/create", data=ANS)
+    client.post("/contract/v2")
+    page = client.post("/interview", data=ANS).text
+    assert "Open version 2, already saved" in page and "Save as version" not in page
+    assert client.post("/contract/create", data=ANS).headers["location"] == "/contract"
+    from ctd import contracts
+    assert contracts.versions("CON-SUPPLY-RISK") == [1, 2]  # the click made no new version, as the label says
