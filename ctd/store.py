@@ -6,7 +6,9 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-DB = Path(__file__).resolve().parent.parent / "data" / "state.db"
+import os
+
+DB = Path(os.environ.get("CTD_DB") or Path(__file__).resolve().parent.parent / "data" / "state.db")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS contracts (
