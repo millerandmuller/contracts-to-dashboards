@@ -1,6 +1,7 @@
 """Inbox, contract card and consolidation after the design reference: numbers counted from the pack, rule names read from the pack."""
 import os
 import re
+from pathlib import Path
 
 os.environ["CTD_OFFLINE"] = "1"
 
@@ -95,7 +96,7 @@ def test_inbox_is_a_message_an_answer_a_stepper_and_one_button(client):
     assert "<b>From:</b> Supply Analytics Lead" in msg and "OWN-005" in msg
     assert "<b>To:</b> Data Product Owner · BI team" in msg and "OWN-004" in msg and "○</span> open" in msg
     assert "the pack does not record who asked" in msg and "REQ-0101 of 2026-10-05" in msg
-    assert "A 10th dashboard? No." in body
+    assert "A tenth dashboard? No." in body and "the first of 5 active Data Product Owners" in msg
     order = [body.index(x) for x in ('id="msg"', 'id="answer"', 'id="stepper"', "Ask the three questions", "not to the person who builds", 'id="evidence"')]
     assert order == sorted(order)
     steps = body.split('id="stepper"')[1].split("</ol>")[0]
@@ -118,5 +119,23 @@ def test_evidence_section_is_closed_and_keeps_every_footnote(client):
     page = client.get("/").text
     ev = page.split('<details class="evidence" id="evidence">')[1].split('<div class="nextbar"')[0]
     assert ev.startswith("<summary>Evidence and sources</summary>")
-    for s in ("Assets without an active owner", "Numbers with more than one definition", "RULE-001", "RULE-008", "[4] contract store", "numbers covered", "inactive owners", "Instead of a 10th dashboard"):
+    for s in ("Assets without an active owner", "Numbers with more than one definition", "RULE-001", "RULE-008", "[4] contract store", "numbers covered", "inactive owners", "Instead of a tenth dashboard"):
         assert s in ev, s
+
+
+def test_ordinals_read_as_spoken():
+    from ctd.render import ordinal
+    assert [ordinal(n) for n in (1, 2, 10, 20, 21, 22, 23, 101, 111, 112)] == ["first", "second", "tenth", "twentieth", "21st", "22nd", "23rd", "101st", "111th", "112th"]
+
+
+def test_the_model_row_stays_hidden_until_the_model_answers():
+    css = (Path(__file__).resolve().parent.parent / "ctd" / "static" / "tokens.css").read_text()
+    assert "ol.stepper>li[hidden]{display:none}" in css  # display:grid on the rows would otherwise beat the hidden attribute
+
+
+def test_inbox_survives_a_role_without_an_active_owner(client, monkeypatch):
+    cat = get_catalog()
+    owners = cat.owners.copy()
+    monkeypatch.setattr(cat, "owners", owners.assign(status=owners.status.where(owners.role != "Data Product Owner", "inactive")))
+    r = client.get("/")
+    assert r.status_code == 200 and "Data Product Owner · BI team <span class=\"mono ctxc\">no active owner</span>" in r.text

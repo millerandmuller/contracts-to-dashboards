@@ -30,12 +30,12 @@ def ctx(request: Request, beat: int, **kw) -> dict:
 
 def lead_owner() -> str:
     """The active owner the builder assigns to the Supply Analytics Lead, read from the Owners sheet."""
-    return _active_owner(get_catalog(), LEAD)
+    return _active_owners(get_catalog(), LEAD)[0]
 
 
-def _active_owner(cat, role: str) -> str:
+def _active_owners(cat, role: str) -> list[str]:
     o = cat.owners
-    return str(o[(o.role == role) & (o.status == "active")].index[0])
+    return [str(i) for i in o[(o.role == role) & (o.status == "active")].index]
 
 
 def html(name: str, request: Request, beat: int, **kw) -> HTMLResponse:
@@ -87,11 +87,17 @@ def _inbox(cat, a: dict) -> dict:
         "first_month": dated[0]["request_date"][:7] if dated else "", "table": table, "assets_total": len(cat.assets),
         "first_month_name": datetime.strptime(dated[0]["request_date"], "%Y-%m-%d").strftime("%B") if dated else "",
         "latest": dated[-1] if dated else None, "received": date.today().isoformat(),
-        "sender": {"role": LEAD, "id": lead_owner()}, "to": {"role": BI_RECEIVER, "id": _active_owner(cat, BI_RECEIVER)},
+        "sender": _party(cat, LEAD), "to": _party(cat, BI_RECEIVER),
         "asset_kinds": ", ".join(f"{n} {k.lower()}{'s' if n > 1 else ''}" for k, n in kinds.items()),
         "covered_names": [kpi_name(k) for k in a["covered_kpis"]], "uncovered_names": [kpi_name(k) for k in a["uncovered_kpis"]],
         "asset_types": cat.assets.asset_type.value_counts().to_dict(),
     }
+
+
+def _party(cat, role: str) -> dict:
+    """A role on the message header with the owner ID shown. Several active owners: the first is shown and the page says so; none: no ID."""
+    ids = _active_owners(cat, role)
+    return {"role": role, "id": ids[0] if ids else "no active owner", "of": len(ids)}
 
 
 # ---- beat 2: three questions ---------------------------------------------------------

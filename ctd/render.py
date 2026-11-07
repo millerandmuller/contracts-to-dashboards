@@ -180,6 +180,17 @@ def demo_next(path: str) -> dict | None:
     return {"label": n[2], "href": n[3], "back": i == len(DEMO) - 1}
 
 
+WORDS = "first second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth thirteenth fourteenth fifteenth sixteenth seventeenth eighteenth nineteenth twentieth".split()
+
+
+def ordinal(n: int) -> str:
+    """tenth, 21st, 112th: words up to twenty as they are spoken, digits with the right suffix above."""
+    if 1 <= n <= len(WORDS):
+        return WORDS[n - 1]
+    return f"{n}{'th' if n % 100 in (11, 12, 13) else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"
+
+
+env.filters["ordinal"] = ordinal
 env.globals["demo"] = DEMO
 env.globals["demo_next"] = demo_next
 env.globals["no_contract_needed"] = NO_CONTRACT_NEEDED
