@@ -18,3 +18,7 @@ async function refreshStage(){
 (function(){const box=document.getElementById('reading');if(!box||box.dataset.live!=='1')return;
   const f=document.getElementById('qform');const fd=new FormData();['q1','q2','q3'].forEach(k=>fd.append(k,f.elements[k].value));
   fetch('/interview/reading',{method:'POST',body:fd}).then(r=>r.status===200?r.text():null).then(t=>{if(t)box.innerHTML=t}).catch(()=>{})})();
+
+// Interview: a "for example" line copies its text into its own field. No request, no reload.
+document.addEventListener('click',e=>{const b=e.target.closest('button.exfill');if(!b)return;const f=document.getElementById(b.dataset.for);if(!f)return;
+  f.value=b.dataset.text;f.dispatchEvent(new Event('input',{bubbles:true}));f.focus()});

@@ -147,3 +147,15 @@ def test_pages_survive_a_sender_without_an_active_owner(client, monkeypatch):
     monkeypatch.setattr(cat, "owners", owners.assign(status=owners.status.where(owners.role != "Supply Analytics Lead", "inactive")))
     for path in ("/", "/interview", "/audit"):
         assert client.get(path).status_code == 200, path
+
+
+def test_each_example_line_fills_its_own_field_without_a_request(client):
+    from ctd import interview
+    page = client.get("/interview").text
+    for q in interview.questions("Supply Analytics Lead"):
+        b = re.search(r'<button type="button" class="exfill" data-for="%s" data-text="([^"]*)"' % q["id"], page)
+        assert b and b.group(1) == str(q["example"]).replace("&", "&amp;") and f'id="{q["id"]}" name="{q["id"]}" value=""' in page
+    js = (Path(__file__).resolve().parent.parent / "ctd" / "static" / "app.js").read_text()
+    fill = js.split("button.exfill")[1].split("});")[0]
+    assert "f.value=b.dataset.text" in fill and "fetch" not in fill and "submit" not in fill
+    assert 'href="/interview?prepared=1" title="Loads the example answers for this role. Typing works the same.">Fill in with example answers</a>' in page

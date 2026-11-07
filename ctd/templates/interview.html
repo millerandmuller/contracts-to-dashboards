@@ -16,13 +16,13 @@
     <div class="qblock2"><span class="qn">{{ loop.index }}</span><div>
       <label class="qask" for="{{ q.id }}">{{ q.ask }}</label>
       <input type="text" id="{{ q.id }}" name="{{ q.id }}" value="{{ answers[q.id] }}" autocomplete="off">
-      <div class="ctx">for example: {{ q.example }}</div>
+      <button type="button" class="exfill" data-for="{{ q.id }}" data-text="{{ q.example }}" title="Copies this example into the field above. Nothing is sent.">for example: {{ q.example }}</button>
       {% if q.id=='q1' and followup %}<div class="yourcall"><b>Is that your call?</b><div class="ctx">{{ followup }}</div></div>{% endif %}
     </div></div>
   {% endfor %}
   {% if error %}<div class="err">{{ error }}</div>{% endif %}
   <div class="actbar"><button class="go" type="submit">Show the contract</button>
-  {% if not prepared %}<a class="btn ghost" href="/interview?prepared=1">Use the prepared answers</a>{% endif %}
+  {% if not prepared %}<a class="btn ghost" href="/interview?prepared=1" title="Loads the example answers for this role. Typing works the same.">Fill in with example answers</a>{% endif %}
   <span class="ctx">Nothing is saved yet. You see the proposal and what the code checked first.</span></div>
   </form>
 
