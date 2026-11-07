@@ -5,9 +5,20 @@
 {% if c %}<form method="post" action="/export"><button class="go">Write the project folder</button></form>{% endif %}
 {% if result %}
 <h3>{{ result.name }} · hash {{ result.sha256[:16] }}</h3>
-<div class="two"><div><pre class="code tree">{% for f in result.files %}{{ f }}
+<div class="three" id="tree">
+{% for b in sm.boxes %}<div class="box"><div class="boxhead">{{ b.title }}<span class="cite"> · {{ b.count }} files</span></div><pre class="code tree">{% for f in b.files %}{{ f.split('/')[-1] if b.title.startswith('data') else f.split('/', 1)[1] }}
+{% endfor %}</pre></div>{% endfor %}
+</div>
+<div class="cite">Project entry: {{ sm.entry|join(', ') }}</div>
+<div class="two">
+  <div><div class="cite">Contract.tmdl (excerpt, read back from the file)</div>
+    <pre class="code" id="tmdl">{% for k, v in sm.fields.items() %}{{ k }}: {{ v }}
 {% endfor %}</pre></div>
-<div><div class="cite">report.json</div><pre class="code">{{ report }}</pre></div></div>
-<div class="note">Status: generated from the published PBIP/TMDL structure. <b>Not</b> yet opened in Power BI Desktop. Run the export twice and the hash stays the same.</div>
+  <div><div class="cite">Card visual</div>
+    <pre class="code" id="card-visual">visualType: {{ sm.card_type }}
+bound to: Series[{{ sm.card_field }}]</pre></div>
+</div>
+<div class="closing" id="closing">{% for l in card %}<div class="cline {{ 'ok' if l.ok else 'gap' }}"><b>{{ l.head }}</b><span>{{ l.text }}</span></div>{% endfor %}</div>
+<div class="note">Status: generated from the published PBIP/TMDL structure. <b>not yet opened in Power BI Desktop</b>. Run the export twice and the hash stays the same.</div>
 {% endif %}
 {% endblock %}

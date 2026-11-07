@@ -9,3 +9,8 @@ async function refreshStage(){
   const r=await fetch('/contract?fragment=1');if(!r.ok)return;
   document.getElementById('stage').innerHTML=await r.text();
   const c=await (await fetch('/counter.json')).json();const el=document.getElementById('counter');if(el)el.innerHTML=`Assets: <b>${c.assets}</b>, Views: <b>${c.views}</b>`}
+
+// Interview: the card is already on the page (cached or empty). If a model may answer, ask once and swap the card when it arrives.
+(function(){const box=document.getElementById('reading');if(!box||box.dataset.live!=='1')return;
+  const f=document.getElementById('qform');const fd=new FormData();['q1','q2','q3'].forEach(k=>fd.append(k,f.elements[k].value));
+  fetch('/interview/reading',{method:'POST',body:fd}).then(r=>r.status===200?r.text():null).then(t=>{if(t)box.innerHTML=t}).catch(()=>{})})();

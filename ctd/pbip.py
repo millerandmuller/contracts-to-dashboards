@@ -120,6 +120,26 @@ def export(cat: Catalog, contract_id: str, version: int | None = None) -> dict:
             "sha256": tree_hash(root)}
 
 
+def summary(res: dict) -> dict:
+    """What the export page shows, read back from the files that were written (nothing typed into a template)."""
+    import re
+    root = Path(res["root"])
+    name = res["name"]
+    tmdl = (root / f"{name}.SemanticModel" / "definition" / "tables" / "Contract.tmdl").read_text(encoding="utf-8")
+    fields = dict(re.findall(r'\{"(\w+)","([^"]*)"\}', tmdl))
+    shown = {k: fields.get(k, "") for k in ("contract_id", "version", "owner_id", "amber_line", "escalation_to")}
+    visual = next((p for p in (root / f"{name}.Report" / "definition" / "pages").rglob("visual.json") if '"card"' in p.read_text(encoding="utf-8")), None)
+    card = json.loads(visual.read_text(encoding="utf-8"))["visual"] if visual else {}
+    bound = next((pr["field"]["Measure"]["Property"] for q in card.get("query", {}).get("queryState", {}).values() for pr in q["projections"]), "")
+    csv_rows = len((root / "data" / "series.csv").read_text(encoding="utf-8").splitlines()) - 1
+    boxes = [("Semantic model (TMDL)", [f for f in res["files"] if f.startswith(f"{name}.SemanticModel/")]),
+             ("Report (PBIR)", [f for f in res["files"] if f.startswith(f"{name}.Report/")]),
+             ("data/ (contract.yaml, series.csv, %d rows)" % csv_rows, [f for f in res["files"] if f.startswith("data/")])]
+    return {"fields": shown, "card_type": card.get("visualType", ""), "card_field": bound, "csv_rows": csv_rows,
+            "boxes": [{"title": t, "files": fs, "count": len(fs)} for t, fs in boxes],
+            "entry": [f for f in res["files"] if "/" not in f]}
+
+
 def tree_hash(root: Path) -> str:
     h = hashlib.sha256()
     for p in sorted(x for x in root.rglob("*") if x.is_file()):

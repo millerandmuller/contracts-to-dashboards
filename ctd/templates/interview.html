@@ -19,8 +19,9 @@
 <h3>Contract proposal (nothing is saved yet)</h3>
 {% if proposal.errors %}
   {% for e in proposal.errors %}<div class="err">{{ e }}</div>{% endfor %}
+  <div id="reading" data-live="0">{% include "_reading.html" %}</div>
 {% else %}
-  <p class="row"><span class="badge good">checks passed</span> <span class="cite">owner active · official number · cadence covered by the data · evidence cited</span></p>
+  <div id="reading" data-live="{{ 1 if live else 0 }}">{% include "_reading.html" %}</div>
   <form method="post" action="/contract/create" class="row">
     <input type="hidden" name="q1" value="{{ answers.q1 }}"><input type="hidden" name="q2" value="{{ answers.q2 }}"><input type="hidden" name="q3" value="{{ answers.q3 }}">
     <button class="go" type="submit">Save as version 1 and render the views</button>

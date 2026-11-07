@@ -1,0 +1,62 @@
+{% set chips = {'open': '○', 'acknowledged': '◐', 'closed': '●'} %}
+<section class="view v2" aria-label="View for {{ v.role }}">
+  <h3 class="question">{{ v.question }}</h3>
+  <div class="rolename">{{ v.role }}</div>
+  <div class="trail" data-trail>rendered from {{ v.audit_line.contract }} · owner {{ v.audit_line.owner }} · observed {{ v.audit_line.observed }} · rule {{ v.audit_line.rule }} · {{ v.audit_line.manual }} · Assets: {{ counters.assets }}, Views: {{ counters.views }}</div>
+  <div class="waitbar">
+    <span>Waiting on me: <span class="a">{{ v.counters.on_me|length }}</span></span>
+    <span>I am waiting on others: <span class="a">{{ v.counters.on_others|length }}</span></span>
+  </div>
+  {% if v.focus %}
+  {% set f = v.focus %}{% set ch = v.lead_change %}
+  <div class="zone-a">
+    <div class="what">{{ v.lead_name }} · {{ f.market_name }}</div>
+    <div class="lead-row">
+      <div class="now"><span class="big st-{{ f.status|replace(' ','') }}">{{ f.latest|fmt(1) }}</span><sup class="fn">{{ f.note }}</sup><span class="unit"> {{ v.thr.unit }} of stock, {{ f.month }}</span></div>
+      <div class="before"><span class="hatch">{{ v.lead_prev|fmt(1) }}</span><span class="unit"> {{ v.prev_month }}</span></div>
+      <div class="delta">{% if ch %}<b>{{ '▲' if ch.dir=='up' else '▼' if ch.dir=='down' else '■' }} {{ '%+.1f'|format(ch.abs) }} {{ v.thr.unit }}{% if ch.pct is not none %} ({{ '%+.0f'|format(ch.pct) }}%){% endif %}</b> vs last month
+        <span class="bar" aria-hidden="true"><i class="{{ ch.dir }}" style="width:{{ ch.bar }}%"></i></span>{% else %}<span class="cite">no month before to compare</span>{% endif %}</div>
+    </div>
+    <div class="cite">Amber line: {{ v.thr.amber|fmt(0) }} {{ v.thr.unit }}. {{ sparkline(f.series, v.thr.amber, 140, 24) }}{% if f.last_kind=='forecast_like' %}The latest month is a forecast, drawn hollow.{% endif %}</div>
+  </div>
+  <div>{{ f.sentence }}</div>
+  <div class="neigh">
+    {% for n in v.neighbours %}<div class="cell"><div class="cite">{{ n.plain }}</div>
+      <div class="v">{{ n.latest|fmt(1 if n.unit!='units' else 0) }} <span class="unit">{{ n.unit }}</span><sup class="fn">{{ n.note }}</sup></div>
+      {% if n.series %}{{ sparkline(n.series, none, 110, 22) }}{% else %}<div class="cite">{{ n.gap }}</div>{% endif %}</div>{% endfor %}
+  </div>
+  {% else %}
+  <p class="lead">Nothing has been passed to you. Nothing is red for two months in a row.</p>
+  {% endif %}
+
+  {% if v.rows|length > 1 or (v.rows|length==1 and not v.is_receiver) %}
+  <h3>Pairs <span class="shown">shown first: escalated pairs, then the worst pair</span></h3>
+  <table class="pairs">{% for r in v.rows %}<tr><td>{{ r.market_name }}</td><td class="num st-{{ r.status|replace(' ','') }}">{{ r.latest|fmt(1) }}<sup class="fn">{{ r.note }}</sup></td>
+    <td class="num cite">{% if r.change %}{{ '▲' if r.change.dir=='up' else '▼' if r.change.dir=='down' else '■' }} {{ '%+.1f'|format(r.change.abs) }}{% endif %}</td>
+    <td>{{ r.lolli }}</td>
+    <td>{% if r.escalated %}<span class="badge bad">2 months below</span>{% elif r.status=='ok' %}<span class="badge good">ok</span>{% else %}<span class="badge">{{ r.status }}</span>{% endif %}</td></tr>{% endfor %}</table>
+  {% endif %}
+
+  <h3>Handovers</h3>
+  {% for h in v.handovers %}
+  <div class="ho {{ h.state }}" data-state="{{ h.state }}">
+    <div class="row"><span class="chip chip-{{ h.state }}" data-chip="{{ h.state }}"><span class="shape" aria-hidden="true">{{ chips[h.state] }}</span> {{ h.state }}</span> <b>{{ h.pair }}</b> <span class="cite">{{ h.handover_id }}</span>
+      {% if h.overdue %}<span class="badge bad">overdue</span>{% endif %}
+      <span class="right cite">{{ h.from_role }} → {{ h.to_role }}</span></div>
+    <div>{{ h.observed_blocker }}. Asked: <i>{{ h.requested_action }}</i> within {{ h.response_window_hours }} h.</div>
+    <div class="cite">Evidence frozen at {{ h.created_at|hhmm }}: {{ h.evidence_snapshot[0].sheet }}: {{ h.evidence_snapshot[0].ids|join(', ') }} · {{ h.system_of_record }}</div>
+    {% for t in h.transitions if t.to_state != 'open' %}
+      <div class="took">{% if t.to_state=='acknowledged' %}Seen and taken over by {{ t.by }}, {{ t.at|hhmm }}{% else %}Closed by {{ t.by }}, {{ t.at|hhmm }}: {{ t.reason }}{% endif %}</div>{% endfor %}
+    <div class="row" style="margin-top:.4rem">
+    {% if h.state=='open' %}
+      {% if v.role==h.to_role %}<button class="go big" onclick="act('/handover/{{ h.handover_id }}/ack',{actor:'{{ v.role }}'},refreshStage)">Acknowledge</button>
+      {% else %}<span class="badge wait">waiting on {{ h.to_role }}</span>{% endif %}
+    {% endif %}
+    {% if h.state!='closed' %}<button class="ghost" onclick="var r=prompt('Why can this be closed?');if(r)act('/handover/{{ h.handover_id }}/close',{actor:'{{ v.role }}',reason:r},refreshStage)">Close…</button>{% endif %}
+    </div>
+  </div>
+  {% else %}<div class="cite">No handovers.</div>{% endfor %}
+
+  <div class="side">{% for s in v.side_roles %}<span>{{ s.kind }}: <b>{{ s.role }}</b>{% if s.waiting %} ({{ s.waiting }} waiting){% endif %}</span>{{ ' · ' if not loop.last }}{% endfor %}</div>
+  <div class="foot">Sources<ol>{% for f in v.foots %}<li value="{{ loop.index }}">{{ f }}</li>{% endfor %}</ol></div>
+</section>

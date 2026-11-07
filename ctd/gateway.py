@@ -20,22 +20,61 @@ def fixture(name: str) -> dict:
     return json.loads((DATA / "fixtures" / name).read_text())
 
 
+def live() -> bool:
+    """True when a model call may be tried at all."""
+    return not OFFLINE and bool(os.environ.get("ANTHROPIC_API_KEY")) and time.time() >= _down_until
+
+
+def _ask(system: str, user: str, max_tokens: int) -> str:
+    import anthropic
+    client = anthropic.Anthropic(timeout=TIMEOUT_S, max_retries=0)
+    r = client.messages.create(model=MODEL, max_tokens=max_tokens, system=system, messages=[{"role": "user", "content": user}])
+    text = "".join(b.text for b in r.content if getattr(b, "type", "") == "text").strip()
+    if not text:
+        raise ValueError("empty answer")
+    return text
+
+
+def _fallback_reason() -> str | None:
+    if OFFLINE:
+        return "offline"
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        return "no API key"
+    if time.time() < _down_until:
+        return "model unreachable a moment ago"
+    return None
+
+
 def complete(task: str, facts: str, cached_text: str) -> dict:
     """Return {'text', 'cached', 'why'}. Falls back to the fixture on no key, offline, timeout or any error."""
-    if OFFLINE or not os.environ.get("ANTHROPIC_API_KEY"):
-        return {"text": cached_text, "cached": True, "why": "offline" if OFFLINE else "no API key"}
+    why = _fallback_reason()
+    if why:
+        return {"text": cached_text, "cached": True, "why": why}
     global _down_until
-    if time.time() < _down_until:
-        return {"text": cached_text, "cached": True, "why": "model unreachable a moment ago"}
     try:
-        import anthropic
-        client = anthropic.Anthropic(timeout=TIMEOUT_S, max_retries=0)
-        r = client.messages.create(model=MODEL, max_tokens=300, system=SYSTEM,
-                                   messages=[{"role": "user", "content": f"Task: {task}\nFacts:\n{facts}"}])
-        text = "".join(b.text for b in r.content if getattr(b, "type", "") == "text").strip()
-        if not text:
-            raise ValueError("empty answer")
-        return {"text": text, "cached": False, "why": MODEL}
+        return {"text": _ask(SYSTEM, f"Task: {task}\nFacts:\n{facts}", 300), "cached": False, "why": MODEL}
     except Exception as e:  # noqa: BLE001 - any failure degrades to the fixture, visibly
         _down_until = time.time() + 120
         return {"text": cached_text, "cached": True, "why": f"{type(e).__name__}"}
+
+
+JSON_SYSTEM = ("You read short answers from a shift worker and propose fields for a role contract. Reply with one JSON object only, no prose. "
+               "Use only the allowed values you are given. For every field give the exact words from the answers that it comes from.")
+
+
+def complete_json(task: str, facts: str) -> dict:
+    """Return {'data': dict | None, 'cached': bool, 'why': str}. data is None whenever the model did not answer usably."""
+    why = _fallback_reason()
+    if why:
+        return {"data": None, "cached": True, "why": why}
+    global _down_until
+    try:
+        text = _ask(JSON_SYSTEM, f"Task: {task}\nFacts:\n{facts}", 700)
+        text = text[text.index("{"): text.rindex("}") + 1]
+        data = json.loads(text)
+        if not isinstance(data, dict):
+            raise ValueError("not an object")
+        return {"data": data, "cached": False, "why": MODEL}
+    except Exception as e:  # noqa: BLE001
+        _down_until = time.time() + 120
+        return {"data": None, "cached": True, "why": f"{type(e).__name__}"}

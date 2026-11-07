@@ -1,0 +1,19 @@
+<div class="reading" id="reading-card" data-source="{{ reading.source }}">
+  <div class="two">
+    <div>
+      <h4>What the model read {% if reading.source=='cached' %}<span class="badge cached" title="{{ reading.why }}">cached</span>{% elif reading.source=='model' %}<span class="badge good" title="{{ reading.why }}">live</span>{% endif %}</h4>
+      {% if reading.has_model %}
+      {% for r in reading.rows %}<div class="rfield"><span class="cite">{{ r.label }}</span> <b>{{ r.model or '–' }}</b>
+        {% if r.quote %}<div class="quote">“{{ r.quote }}”</div>{% else %}<div class="quote none">no matching words in the answers</div>{% endif %}</div>{% endfor %}
+      {% else %}<div class="note">No model reading available for these answers ({{ reading.why }}). The code checks on the right still run.</div>{% endif %}
+    </div>
+    <div>
+      <h4>What the code checked</h4>
+      {% for k in reading.checks %}<div class="rcheck"><span class="mk {{ 'ok' if k.ok else 'no' }}">{{ '✓' if k.ok else '✗' }}</span> {{ k.label }}</div>{% endfor %}
+      {% if reading.has_model %}
+      {% for r in reading.rows %}<div class="rcheck {{ r.status }}"><span class="mk {{ 'ok' if r.status=='match' else 'no' }}">{{ '✓' if r.status=='match' else '✗' }}</span> <span class="cite">{{ r.label }}</span> {{ r.text }}</div>{% endfor %}
+      {% endif %}
+      <div class="cite" style="margin-top:.4rem">The contract is built from the parsed result. The model sets no number, threshold, owner or state.</div>
+    </div>
+  </div>
+</div>

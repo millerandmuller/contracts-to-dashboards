@@ -7,7 +7,7 @@ from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import builder, contracts, gateway, handovers, interview, pbip, preserve, refuse, render, store
+from . import builder, contracts, gateway, handovers, interview, pbip, preserve, reader, refuse, render, store
 from .catalog import get_catalog
 
 ROOT = Path(__file__).resolve().parent
@@ -69,7 +69,20 @@ def interview_submit(request: Request, q1: str = Form(""), q2: str = Form(""), q
         errs = contracts.validate(c, cat)
     except ValueError as e:
         return html("interview.html", request, 2, **base, error=str(e), proposal=None, followup=follow)
-    return html("interview.html", request, 2, **base, error=None, proposal={"c": c, "errors": errs, "yaml": contracts.to_yaml(c)}, followup=follow)
+    reading = reader.cached(answers, errs)  # shown at once; the page swaps in the model's reading if it answers in time
+    return html("interview.html", request, 2, **base, error=None, proposal={"c": c, "errors": errs, "yaml": contracts.to_yaml(c)}, followup=follow,
+                reading=reading, live=gateway.live())
+
+
+@app.post("/interview/reading", response_class=HTMLResponse)
+def interview_reading(request: Request, q1: str = Form(""), q2: str = Form(""), q3: str = Form("")):
+    answers = {"q1": q1, "q2": q2, "q3": q3}
+    try:
+        c = builder.propose(get_catalog(), LEAD, answers, get_catalog().analyze(REQUEST))
+        errs = contracts.validate(c, get_catalog())
+    except ValueError:
+        return HTMLResponse("", status_code=204)
+    return HTMLResponse(render.page("_reading.html", reading=reader.ask_model(answers, errs)))
 
 
 @app.post("/contract/create")
@@ -182,6 +195,9 @@ def shift(request: Request, role: str = "Shift Team Lead", step: int = 0):
     g = refuse.gaps_for(cat, role)
     fx = gateway.fixture("interview_supply_analytics_lead.json")
     facts = "\n".join(f"- {m['kind']}: {m['what']}" for m in g["missing"])
+    if g["missing"] and not any(d["role"] == role for d in store.decisions("refusal_seen")):
+        store.put_decision("refusal_seen", {"role": role})
+        store.audit(role, "refusal_shown", role, "the catalog cannot serve this role; a gap was named instead of a view")
     o = g["ontology"]
     base = (f"Your decision is about {o['example_decision']}. This catalog cannot show that yet. "
             "What is missing is listed below. Nothing was built, so nothing can mislead you.")
@@ -202,10 +218,29 @@ def export_run(request: Request):
     if not c:
         return RedirectResponse("/interview?prepared=1", status_code=303)
     res = pbip.export(get_catalog(), CID)
+    again = pbip.export(get_catalog(), CID)  # the proof on screen: same contract, same hash, twice
     store.audit(c["role"], "pbip_exported", f"{CID} v{c['version']}", f"project folder written, hash {res['sha256'][:12]}")
-    root = Path(res["root"])
-    report = (root / next(f for f in res["files"] if f.endswith("report.json"))).read_text()
-    return html("export.html", request, 6, c=c, result=res, report=report)
+    sm = pbip.summary(res)
+    return html("export.html", request, 6, c=c, result=res, sm=sm, card=_closing_card(c, res, again, sm))
+
+
+def _closing_card(c: dict, res: dict, again: dict, sm: dict) -> list[dict]:
+    """Five lines, each with numbers counted from this run. Nothing here is typed in."""
+    a = get_catalog().analyze(REQUEST)
+    cnt = contracts.counters()
+    vers = contracts.versions(CID)
+    log = c["change_log"]
+    full_log = all(e.get("by") and e.get("at") and e.get("reason") for e in log)
+    cited = [e for e in c["evidence"] if e.get("sheet") and e.get("ids")]
+    seen = store.decisions("refusal_seen")
+    same = res["sha256"] == again["sha256"]
+    return [
+        {"head": "Fewer assets", "text": f"{len(a['requests'])} requests, {max(0, cnt['assets'] - (1 if vers else 0))} new dashboards, Assets: {cnt['assets']}", "ok": True},
+        {"head": "Governed", "text": (f"v{vers[0]} → v{vers[-1]}" if len(vers) > 1 else f"v{vers[0]}") + ", every change with name, time, reason" + ("" if full_log else " (gaps in the log)"), "ok": full_log},
+        {"head": "Cited", "text": f"every number carries sheet and record ({len(cited)} of {len(c['evidence'])} evidence lines)", "ok": len(cited) == len(c["evidence"])},
+        {"head": "Honest", "text": (f"{seen[-1]['role']} got a gap, not a view" if seen else "no refusal was shown in this run"), "ok": bool(seen)},
+        {"head": "Exports", "text": f"{len(res['files'])} files, " + ("same hash twice" if same else "the hash differs between two exports"), "ok": same},
+    ]
 
 
 @app.get("/audit", response_class=HTMLResponse)

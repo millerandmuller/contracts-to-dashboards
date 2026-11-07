@@ -28,8 +28,9 @@ Works offline. With `ANTHROPIC_API_KEY` set, three short texts come from the mod
 | Honest refusal (gap found by code) | `ctd/refuse.py` | wording only |
 | PBIP export, deterministic (same contract, same hash) | `ctd/pbip.py` | no |
 | Short explanatory texts | `ctd/gateway.py` | yes, with fallback |
+| Interview reading: proposes contract fields from the answers; code checks every field; the contract is built from the checked result | `ctd/reader.py` | yes, with fixture fallback |
 
-The model never picks a number, a threshold, an owner or a state.
+The model never picks a number, a threshold, an owner or a state. On the interview page it proposes contract fields from the answers and quotes the words each one comes from; code parses the same answers, shows every disagreement by name and builds the contract from the parsed result. Unknown numbers or roles from the model are discarded. `CTD_VIEW=v1` draws the earlier role view.
 
 ## Governance controls
 Retrieval finds, never decides · owner must be active · one contract per responsibility, neighbours are edges · views are configuration, not assets · only the receiving role acknowledges · closing needs a reason · overdue is computed and never green · missing data is a visible gap, never interpolated · audit log is append-only (database triggers) · every number carries a footnote with sheet and record.
@@ -45,7 +46,7 @@ Retrieval finds, never decides · owner must be active · one contract per respo
 | Roles in the demo are picked, not logged in | simplification; rights are still enforced on the server |
 | PBIP folder | generated from the published PBIP/PBIR/TMDL structure, **not yet opened in Power BI Desktop** |
 
-Data notes: months with no shipments (products not on a market) are shown as gaps, not zeros. The latest month for some pairs is "forecast-like" in the pack and is drawn hollow.
+Data notes: months with no shipments (products not on a market) are shown as gaps, not zeros. The latest month for some pairs is a forecast in the pack and is drawn hollow.
 
 ## Enterprise BI integration
 The contract is YAML; the export is a PBIP folder that can live in git next to a Fabric workspace. A real catalog connection replaces `ctd/catalog.py` (same interface); the role list would be checked against the real org chart.

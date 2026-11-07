@@ -73,3 +73,8 @@ def put_decision(key: str, body: dict) -> None:
 def decisions(key: str) -> list[dict]:
     with conn() as c:
         return [json.loads(r["body"]) | {"at": r["at"]} for r in c.execute("SELECT * FROM decisions WHERE key=? ORDER BY id", (key,))]
+
+
+def audit_count(action: str) -> int:
+    with conn() as c:
+        return c.execute("SELECT COUNT(*) FROM audit WHERE action=?", (action,)).fetchone()[0]

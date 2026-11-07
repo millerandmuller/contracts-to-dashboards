@@ -4,6 +4,7 @@ from __future__ import annotations
 from .builder import KPI_SOURCE
 from .catalog import Catalog
 
+RULE_VERSION = 1  # the escalation rule: lead number below the amber line for 2 months in a row
 STATUS_ORDER = {"red": 0, "amber": 1, "ok": 2, "no data": 3}
 
 

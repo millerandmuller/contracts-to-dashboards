@@ -72,3 +72,40 @@ pre.yaml,pre.code{background:var(--paper);border:1px solid var(--line);padding:.
 .right{margin-left:auto}
 .toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.6rem 1rem;border-radius:3px;display:none;max-width:70ch;z-index:9}
 footer{color:var(--mute);font-size:.78rem;margin-top:2rem;border-top:1px solid var(--line);padding-top:.5rem}
+/* view v2: question first, audit trail second, then the numbers */
+.view.v2 h3.question{margin:0;color:var(--ink);font-size:1.15rem;text-transform:none;letter-spacing:0;line-height:1.3}
+.view.v2 .rolename{font-size:.78rem;color:var(--mute);margin:.1rem 0 .4rem}
+.trail{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;color:var(--mute);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:.3rem 0;margin-bottom:.5rem;overflow-wrap:anywhere}
+.zone-a .what{font-weight:600;margin-bottom:.15rem}
+.lead-row{display:flex;flex-wrap:wrap;gap:.4rem 1.4rem;align-items:flex-end}
+.zone-a .big{font-size:3rem;font-weight:700;line-height:1}
+.zone-a .unit{color:var(--mute);font-size:.82rem}
+.hatch{display:inline-block;min-width:3.2rem;padding:.2rem .5rem;font-size:1.3rem;font-weight:600;color:var(--mute);border:1px dashed var(--mute);background:repeating-linear-gradient(135deg,transparent 0 4px,var(--line) 4px 5px)}
+.delta{font-size:.9rem}
+.bar{display:inline-block;width:5rem;height:.5rem;border:1px solid var(--mute);vertical-align:middle;margin-left:.4rem}
+.bar i{display:block;height:100%;background:var(--ink)}.bar i.down{background:var(--ink)}.bar i.up{background:repeating-linear-gradient(90deg,var(--ink) 0 3px,#fff 3px 5px)}
+.shown{text-transform:none;letter-spacing:0;font-weight:400;font-size:.8rem;margin-left:.5rem}
+.lolli .thr{stroke:var(--amber);stroke-width:1.5}.lolli .stem{stroke:var(--mute);stroke-width:1.2}
+.lolli .prev{fill:#fff;stroke:var(--mute);stroke-width:1}.lolli .cur{fill:var(--ink)}.lolli .cur.hollow{fill:#fff;stroke:var(--ink);stroke-width:1.4}.lolli .gap{font-size:10px;fill:var(--mute)}
+table.pairs td:nth-child(4){width:160px}
+.chip{display:inline-flex;align-items:center;gap:.3rem;font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;border:1.5px solid currentColor;border-radius:999px;padding:.05rem .55rem}
+.chip .shape{font-size:1rem;line-height:1}
+.chip-open{color:var(--wait)}.chip-acknowledged{color:var(--ok)}.chip-closed{color:var(--mute)}
+button.big{min-height:44px;min-width:9rem;font-size:1rem}
+/* interview: what the model read / what the code checked */
+.reading{border:1px solid var(--ink);padding:.7rem .9rem;margin:.6rem 0;background:#fff}
+.reading h4{margin:0 0 .4rem;font-size:.95rem}
+.rfield{border-top:1px solid var(--line);padding:.25rem 0}
+.quote{font-size:.82rem;color:var(--mute);font-style:italic}.quote.none{color:var(--amber);font-style:normal}
+.rcheck{border-top:1px solid var(--line);padding:.25rem 0;font-size:.88rem}
+.rcheck .mk{display:inline-block;width:1.2rem;font-weight:700}.mk.ok{color:var(--ok)}.mk.no{color:var(--red)}
+.rcheck.conflict,.rcheck.rejected{background:#fff3f2}
+/* export: three boxes and the closing card */
+.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin:.6rem 0}
+.three>div{min-width:0}
+.boxhead{font-weight:650;font-size:.9rem;margin-bottom:.2rem}
+.three pre.tree{max-height:260px;overflow:auto}
+.closing{border:2px solid var(--ink);margin:1rem 0;padding:.3rem 1rem}
+.cline{display:grid;grid-template-columns:9rem minmax(0,1fr);gap:1rem;padding:.45rem 0;border-top:1px solid var(--line);font-size:1.05rem}
+.cline:first-child{border-top:0}.cline.gap b{color:var(--amber)}
+@media(max-width:900px){.three{grid-template-columns:1fr}}
