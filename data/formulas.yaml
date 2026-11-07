@@ -1,0 +1,23 @@
+# formulas.yaml  [GEMOCKT/KURATIERT]  The data pack holds no formulas. These two are synthetic, so the preservation test has something to run.
+# Stock is rebuilt from the pack: stock_units = inventory_weeks * units_shipped / 4.33 (so the canonical formula reproduces the pack).
+formulas:
+  F-INV-COV-v1:
+    label: "stock divided by this month's shipments"
+    plain: "counts the weeks with this month's shipping pace"
+  F-INV-COV-T3:
+    label: "stock divided by the average of the last 3 months' shipments"
+    plain: "counts the weeks with the pace of the last three months"
+# Which report uses which formula today, and which formula the surviving report uses. Synthetic.
+proposals:
+  - id: CONS-1
+    retire: AST-0025          # Xarelto Supply Legacy: active, owner inactive
+    keep: AST-0104            # Xarelto Supply: active, owner active
+    retire_formula: F-INV-COV-v1
+    keep_formula: F-INV-COV-T3
+    why: "Two Xarelto supply reports, one with an owner who left."
+  - id: CONS-2
+    retire: AST-0217          # Xarelto Supply - US: active, owner inactive
+    keep: AST-0104
+    retire_formula: F-INV-COV-v1
+    keep_formula: F-INV-COV-v1
+    why: "Second pair, prepared as plan B. Same formula on both sides."

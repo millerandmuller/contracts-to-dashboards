@@ -1,0 +1,438 @@
+# role_ontology.yaml  [GEMOCKT/KURATIERT]
+# 28 roles: 10 from the data pack owner table (source: pack), 18 plant roles (source: plant).
+# Curated wording, no real people, no real plant data. catalog_support decides whether a contract can be built (none -> honest refusal).
+- role: BI Platform Owner
+  source: pack
+  example_decision: which workspace stays certified
+  example_signal: failed refresh on a certified model
+  example_action: pause the certificate and tell the owner
+  example_escalation:
+  - Semantic Model Owner
+  upstream: []
+  downstream:
+  - Semantic Model Owner
+  vocabulary:
+  - workspace
+  - certificate
+  - refresh
+  catalog_support: monthly
+- role: Finance BI Product Owner
+  source: pack
+  example_decision: whether a finance report is kept or merged
+  example_signal: two reports with different gross-to-net
+  example_action: pick one definition and merge
+  example_escalation:
+  - Data Steward
+  upstream: []
+  downstream:
+  - Data Steward
+  vocabulary:
+  - report
+  - gross-to-net
+  - finance
+  catalog_support: monthly
+- role: Data Steward
+  source: pack
+  example_decision: which KPI definition is the canonical one
+  example_signal: two KPIs with the same name
+  example_action: mark one as the official number
+  example_escalation:
+  - Data Product Owner
+  upstream: []
+  downstream:
+  - Data Product Owner
+  vocabulary:
+  - definition
+  - KPI
+  - name
+  catalog_support: monthly
+- role: Data Product Owner
+  source: pack
+  example_decision: which data product gets a fix first
+  example_signal: high-reach asset without owner
+  example_action: put it first in the fix list
+  example_escalation:
+  - BI Platform Owner
+  upstream: []
+  downstream:
+  - BI Platform Owner
+  vocabulary:
+  - data product
+  - owner
+  - fix
+  catalog_support: monthly
+- role: Supply Analytics Lead
+  source: pack
+  example_decision: which country needs stock this month
+  example_signal: stock below four weeks
+  example_action: flag the medicine and country for review
+  example_escalation:
+  - Launch Excellence Lead
+  upstream:
+  - Semantic Model Owner
+  downstream:
+  - Launch Excellence Lead
+  vocabulary:
+  - stock
+  - country
+  - medicine
+  - weeks
+  catalog_support: monthly
+- role: Market Access Analytics Lead
+  source: pack
+  example_decision: where reimbursement is stuck
+  example_signal: coverage drops in a launch market
+  example_action: raise it with the launch team
+  example_escalation:
+  - Launch Excellence Lead
+  upstream: []
+  downstream:
+  - Launch Excellence Lead
+  vocabulary:
+  - coverage
+  - reimbursement
+  - market
+  catalog_support: monthly
+- role: Launch Excellence Lead
+  source: pack
+  example_decision: whether a launch wave stays on date
+  example_signal: milestone slips, stock at risk
+  example_action: confirm the delivery date or re-plan the wave
+  example_escalation:
+  - Commercial Analytics Lead
+  upstream:
+  - Supply Analytics Lead
+  - Market Access Analytics Lead
+  downstream:
+  - Commercial Analytics Lead
+  vocabulary:
+  - launch
+  - wave
+  - milestone
+  catalog_support: monthly
+- role: Commercial Analytics Lead
+  source: pack
+  example_decision: which brand needs attention this month
+  example_signal: net sales below forecast
+  example_action: ask the brand team why
+  example_escalation:
+  - Finance BI Product Owner
+  upstream: []
+  downstream:
+  - Finance BI Product Owner
+  vocabulary:
+  - brand
+  - sales
+  - forecast
+  catalog_support: monthly
+- role: Semantic Model Owner
+  source: pack
+  example_decision: whether a model is safe to reuse
+  example_signal: refresh warning, poor names
+  example_action: fix the names or block reuse
+  example_escalation:
+  - BI Platform Owner
+  upstream: []
+  downstream:
+  - BI Platform Owner
+  vocabulary:
+  - model
+  - refresh
+  - names
+  catalog_support: monthly
+- role: Reporting Lead
+  source: pack
+  example_decision: which legacy report is retired
+  example_signal: low adoption, owner left
+  example_action: retire it after the readers are moved
+  example_escalation:
+  - Data Steward
+  upstream: []
+  downstream:
+  - Data Steward
+  vocabulary:
+  - legacy
+  - report
+  - readers
+  catalog_support: monthly
+- role: Production Operator
+  source: plant
+  example_decision: whether the step can start
+  example_signal: missing material, check not passed
+  example_action: stop and call the shift lead
+  example_escalation:
+  - Shift Team Lead
+  upstream: []
+  downstream:
+  - Shift Team Lead
+  vocabulary:
+  - step
+  - material
+  - check
+  catalog_support: none
+- role: Shift Team Lead
+  source: plant
+  example_decision: whether the line runs as planned today
+  example_signal: material missing, machine stopped
+  example_action: re-plan the shift, call maintenance
+  example_escalation:
+  - Maintenance
+  - QA Specialist
+  upstream:
+  - QC Lab Technician
+  - Production Planning
+  downstream:
+  - Maintenance
+  - QA Specialist
+  vocabulary:
+  - line
+  - shift
+  - batch
+  - deviation
+  catalog_support: none
+- role: Pilot Plant Operator
+  source: plant
+  example_decision: whether a trial batch goes ahead
+  example_signal: parameter outside range
+  example_action: hold the batch and ask the engineer
+  example_escalation:
+  - Process Engineer
+  upstream: []
+  downstream:
+  - Process Engineer
+  vocabulary:
+  - trial
+  - batch
+  - parameter
+  catalog_support: none
+- role: Maintenance / Plant Mechanic
+  source: plant
+  example_decision: which machine gets fixed first
+  example_signal: stoppage, repeated fault
+  example_action: fix the one that blocks the line
+  example_escalation:
+  - Shift Team Lead
+  upstream: []
+  downstream:
+  - Shift Team Lead
+  vocabulary:
+  - machine
+  - fault
+  - repair
+  catalog_support: none
+- role: HVAC Technician
+  source: plant
+  example_decision: whether the room stays in use
+  example_signal: pressure or humidity out of range
+  example_action: close the room and call QA
+  example_escalation:
+  - QA Specialist
+  upstream: []
+  downstream:
+  - QA Specialist
+  vocabulary:
+  - room
+  - pressure
+  - humidity
+  catalog_support: none
+- role: Cleanroom Cleaning
+  source: plant
+  example_decision: whether the room is released for work
+  example_signal: cleaning log not signed
+  example_action: keep the room closed until it is signed
+  example_escalation:
+  - QA Specialist
+  upstream: []
+  downstream:
+  - QA Specialist
+  vocabulary:
+  - cleaning
+  - room
+  - log
+  catalog_support: none
+- role: Automation / Process Engineer
+  source: plant
+  example_decision: whether a line parameter is changed
+  example_signal: cycle time or yield drifts
+  example_action: check the change with validation first
+  example_escalation:
+  - Validation Engineer
+  upstream: []
+  downstream:
+  - Validation Engineer
+  vocabulary:
+  - cycle time
+  - yield
+  - parameter
+  catalog_support: none
+- role: MES Engineer
+  source: plant
+  example_decision: whether a blocked step is released
+  example_signal: operator cannot proceed in MES
+  example_action: check the step and release it
+  example_escalation:
+  - QA Specialist
+  upstream: []
+  downstream:
+  - QA Specialist
+  vocabulary:
+  - MES
+  - step
+  - blocked
+  catalog_support: none
+- role: IT/OT Security Lead
+  source: plant
+  example_decision: whether a system stays connected
+  example_signal: unexpected access to a controller
+  example_action: disconnect it and tell the plant manager
+  example_escalation:
+  - Plant Management
+  upstream: []
+  downstream:
+  - Plant Management
+  vocabulary:
+  - controller
+  - access
+  - network
+  catalog_support: none
+- role: QC Lab Technician
+  source: plant
+  example_decision: whether a raw material is free for use
+  example_signal: sample outside specification
+  example_action: hold the material and call QA
+  example_escalation:
+  - QA Specialist
+  - Production Planning
+  upstream: []
+  downstream:
+  - QA Specialist
+  - Production Planning
+  vocabulary:
+  - sample
+  - specification
+  - material
+  catalog_support: none
+- role: Microbiologist
+  source: plant
+  example_decision: whether an area stays clean enough
+  example_signal: growth in an environmental sample
+  example_action: close the area and call QA
+  example_escalation:
+  - QA Specialist
+  upstream: []
+  downstream:
+  - QA Specialist
+  vocabulary:
+  - sample
+  - growth
+  - area
+  catalog_support: none
+- role: QA Specialist
+  source: plant
+  example_decision: whether a deviation is closed
+  example_signal: open deviation past its date
+  example_action: chase the owner and set a new date
+  example_escalation:
+  - Qualified Person
+  upstream: []
+  downstream:
+  - Qualified Person
+  vocabulary:
+  - deviation
+  - closed
+  - date
+  catalog_support: none
+- role: Validation Engineer
+  source: plant
+  example_decision: whether equipment is fit for use
+  example_signal: test outside acceptance
+  example_action: block the equipment and repeat the test
+  example_escalation:
+  - QA Specialist
+  upstream: []
+  downstream:
+  - QA Specialist
+  vocabulary:
+  - equipment
+  - test
+  - acceptance
+  catalog_support: none
+- role: Qualified Person
+  source: plant
+  example_decision: whether a batch is released
+  example_signal: any open deviation on the batch
+  example_action: hold the batch
+  example_escalation:
+  - Plant Management
+  - Regulatory
+  upstream: []
+  downstream:
+  - Plant Management
+  - Regulatory
+  vocabulary:
+  - batch
+  - release
+  - deviation
+  catalog_support: none
+- role: Supply Chain / Logistics
+  source: plant
+  example_decision: whether a shipment leaves on time
+  example_signal: batch not released, transport late
+  example_action: move the shipment or call the customer
+  example_escalation:
+  - Production Planning
+  upstream: []
+  downstream:
+  - Production Planning
+  vocabulary:
+  - shipment
+  - transport
+  - batch
+  catalog_support: monthly
+- role: Procurement
+  source: plant
+  example_decision: whether a delivery is pulled forward
+  example_signal: supplier reports delay
+  example_action: ask for an earlier delivery
+  example_escalation:
+  - Production Planning
+  upstream: []
+  downstream:
+  - Production Planning
+  vocabulary:
+  - supplier
+  - delivery
+  - delay
+  catalog_support: none
+- role: Production Planning
+  source: plant
+  example_decision: whether next week's plan holds
+  example_signal: material or capacity gap
+  example_action: change the plan and tell the shift leads
+  example_escalation:
+  - Shift Team Lead
+  - Procurement
+  upstream: []
+  downstream:
+  - Shift Team Lead
+  - Procurement
+  vocabulary:
+  - plan
+  - capacity
+  - material
+  catalog_support: none
+- role: EHS Coordinator
+  source: plant
+  example_decision: whether work can continue safely
+  example_signal: incident, exposure limit reached
+  example_action: stop the work and tell the plant manager
+  example_escalation:
+  - Plant Management
+  upstream: []
+  downstream:
+  - Plant Management
+  vocabulary:
+  - incident
+  - exposure
+  - safety
+  catalog_support: none

@@ -1,0 +1,13 @@
+{
+  "_note": "[KURATIERT] prepared interview answers and cached model texts (plan B). Shown with a 'cached' badge.",
+  "role": "Supply Analytics Lead",
+  "answers": {
+    "q1": "Which country needs stock this month. Once a month.",
+    "q2": "Stock below four weeks. Then I flag the medicine and country for review.",
+    "q3": "Launch Excellence Lead"
+  },
+  "cached": {
+    "explain_cluster": "Nine people asked for the same dashboard in three months. Six dashboards already hold three of the four numbers, and two of those belong to people who are no longer active. Building a tenth would add to the pile. We ask three questions first.",
+    "refusal_shift_team_lead": "Your decision is about today's shift. This catalog has no shift data yet. What is missing is listed below. Nothing was built, so nothing can mislead you."
+  }
+}
