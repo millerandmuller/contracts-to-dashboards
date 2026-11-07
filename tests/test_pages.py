@@ -171,3 +171,10 @@ def test_save_button_names_the_version_the_click_really_gives(client):
     assert client.post("/contract/create", data=ANS).headers["location"] == "/contract"
     from ctd import contracts
     assert contracts.versions("CON-SUPPLY-RISK") == [1, 2]  # the click made no new version, as the label says
+
+
+def test_counter_reads_built_here_until_the_first_contract_exists(client):
+    page = client.get("/").text
+    assert "Built here: <b>0</b> · Views: <b>0</b>" in page and "Assets: <b>0</b>" not in page
+    client.post("/contract/create", data=ANS)
+    assert "Assets: <b>1</b> · Views: <b>2</b>" in client.get("/contract").text

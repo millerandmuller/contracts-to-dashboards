@@ -269,10 +269,12 @@ def view_model(cat: Catalog, c: dict, role: str) -> dict:
     pts = [x for r in mine for x in (r["prev"], r["latest"]) if x is not None] + [thr["amber"]]
     for r in mine:
         r["lolli"] = lollipop(r["prev"], r["latest"], min(pts), max(pts), thr["amber"], r["last_kind"] == "forecast_like")
-    observed = (focus or (rows[0] if rows else {})).get("month", "")
+    observed_row = focus or (rows[0] if rows else {})
+    observed = observed_row.get("month", "")
+    observed_forecast = observed_row.get("last_kind") == "forecast_like"
     owner_state = cat.owner_state(c["owner_id"])
     manual = store.audit_count("view_edited")
-    audit_line = {"contract": f"{c['contract_id']} v{c['version']}", "owner": f"{c['owner_id']} {owner_state}", "owner_id": c["owner_id"], "owner_state": owner_state, "observed": observed,
+    audit_line = {"contract": f"{c['contract_id']} v{c['version']}", "owner": f"{c['owner_id']} {owner_state}", "owner_id": c["owner_id"], "owner_state": owner_state, "observed": observed, "observed_forecast": observed_forecast,
                   "rule": f"v{RULE_VERSION}", "manual": "no manual edits" if manual == 0 else f"{manual} manual edits"}
     question = (c["decision"].rstrip(".?") + ", and who takes it over?") if role == c["role"] else "What has been handed to me, and what do I do with it?"
     focus_rule = next((v["focus_rule"] for v in c["views"] if v["for_role"] == role), "")

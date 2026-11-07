@@ -15,7 +15,7 @@
   {# A page that sets glance_band gets the tinted band (F16): its bandline block prints the one contract line, and that line carries the counter. #}
   <div class="pagehead{{ ' glanceband' if glance_band is defined }}">
     <div class="titles"><div class="kicker">{% block kicker %}{% endblock %}</div><h1 class="q">{% block question %}{% endblock %}</h1></div>
-    <div class="pagemeta">{% block pagemeta %}{% endblock %}{% if glance_band is not defined %}<span class="counter" id="counter" title="Views are configuration over a contract. They never count as assets.">Assets: <b>{{ counters.assets }}</b> · Views: <b>{{ counters.views }}</b></span>{% endif %}</div>
+    <div class="pagemeta">{% block pagemeta %}{% endblock %}{% if glance_band is not defined %}<span class="counter" id="counter" title="Views are configuration over a contract. They never count as assets.">{% if counters.assets == 0 %}Built here{% else %}Assets{% endif %}: <b>{{ counters.assets }}</b> · Views: <b>{{ counters.views }}</b></span>{% endif %}</div>
     {% block bandline %}{% endblock %}
   </div>
   {% block body %}{% endblock %}

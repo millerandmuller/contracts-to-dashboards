@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from ctd import contracts, pbip, reader, store
 from ctd.app import REQUEST, app
 from ctd.catalog import get_catalog
+from ctd.evaluate import pair_rows
 
 ANS = {"q1": "Which country needs stock this month. Once a month.", "q2": "Stock below four weeks. Then I flag the medicine and country for review.", "q3": "Launch Excellence Lead"}
 RECV = "Launch Excellence Lead"
@@ -29,8 +30,11 @@ def trail_lines(html: str) -> list[str]:
 def expected_line(c: dict) -> str:
     cat = get_catalog()
     cnt = contracts.counters()
-    month = cat.series(c["scope"]["product_id"], c["scope"]["markets"][0])[-1]["month"]
-    return (f"owner {c['owner_id']}, {cat.owner_state(c['owner_id'])} · observed {month} · rule v1 · rendered from contract, no manual edits · "
+    # the band shows the focus pair: the first row of the sender's view, the pair the page leads with
+    focus_market = pair_rows(cat, c)[0]["market"]
+    last = cat.series(c["scope"]["product_id"], focus_market)[-1]
+    month = last["month"] + (", forecast, drawn hatched" if last["kind"] == "forecast_like" else "")
+    return (f"owner {c['owner_id']}, {cat.owner_state(c['owner_id'])} · latest month {month} · rule v1 · rendered from contract, no manual edits · "
             f"Assets: {cnt['assets']} · Views: {cnt['views']}")
 
 

@@ -167,7 +167,7 @@ table.cases tr.why td{white-space:normal;font-size:12.5px;border-bottom:2px soli
 .mini i{display:block;height:100%}.mini i.bad{background:var(--bad)}.mini i.good{background:var(--good)}
 .choices{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:8px 0}
 .choice{border:1px solid var(--navy);padding:12px 14px}.choice p{margin:8px 0 0;font-size:13px}
-.auditpre{display:grid;grid-template-columns:9rem 14rem minmax(0,1fr) minmax(0,1.2fr) auto;gap:14px;align-items:end;padding:8px 0;font-size:12.5px}
+.auditpre{display:grid;grid-template-columns:7.5rem 12rem minmax(0,1fr) minmax(26rem,1.8fr) auto;gap:14px;align-items:end;padding:8px 0;font-size:12.5px}
 .rlabel{font-size:11px;color:var(--ctx)}
 .decided{border-left:3px solid var(--navy);background:var(--tint);padding:8px 12px;margin:8px 0;font-size:13px}
 /* IT view */
