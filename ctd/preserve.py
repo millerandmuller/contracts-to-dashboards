@@ -78,6 +78,11 @@ def run(cat: Catalog, c: dict, proposal_id: str, keep_formula: str | None = None
 
 
 def decide(cat: Catalog, c: dict, proposal_id: str, choice: str, by: str, reason: str) -> dict:
+    with store.WRITE_LOCK:
+        return _decide(cat, c, proposal_id, choice, by, reason)
+
+
+def _decide(cat: Catalog, c: dict, proposal_id: str, choice: str, by: str, reason: str) -> dict:
     if not reason.strip():
         raise ValueError("A decision needs a reason.")
     if store.decisions(f"consolidation:{proposal_id}"):

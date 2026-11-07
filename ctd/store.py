@@ -32,13 +32,18 @@ CREATE TRIGGER IF NOT EXISTS tr_no_delete BEFORE DELETE ON transitions BEGIN SEL
 """
 
 
+import threading
+
+WRITE_LOCK = threading.RLock()  # one writer at a time for multi-step actions (decide, new version); single process demo server
+
+
 def now() -> str:
     return datetime.now(timezone.utc).astimezone().strftime("%Y-%m-%dT%H:%M:%S")
 
 
 def conn() -> sqlite3.Connection:
     DB.parent.mkdir(parents=True, exist_ok=True)
-    c = sqlite3.connect(DB)
+    c = sqlite3.connect(DB, timeout=10)
     c.row_factory = sqlite3.Row
     c.executescript(SCHEMA)
     return c

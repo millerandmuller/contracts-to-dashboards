@@ -131,3 +131,14 @@ def test_unknown_ids_are_clean_errors(client):
     assert client.post("/consolidate/NOPE/decide", data={"choice": "approve", "reason": "x"}).status_code in (409, 422)
     assert client.post("/contract/v2").status_code == 409
     assert client.get("/shift?role=Nobody").status_code == 200
+
+
+def test_parallel_decisions_and_versions_stay_single(client):
+    from concurrent.futures import ThreadPoolExecutor
+    client.post("/contract/create", data=ANS)
+    d = {"choice": "fix_mapping", "reason": "agreed denominator"}
+    with ThreadPoolExecutor(10) as ex:
+        codes = list(ex.map(lambda _: client.post("/consolidate/CONS-1/decide", data=d).status_code, range(10)))
+        v2 = list(ex.map(lambda _: client.post("/contract/v2").status_code, range(10)))
+    assert codes.count(200) == 1 and 500 not in codes
+    assert v2.count(200) == 1

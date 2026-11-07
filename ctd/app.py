@@ -106,18 +106,19 @@ def contract_page(request: Request, fragment: int = 0):
 @app.post("/contract/v2")
 def contract_v2(reason: str = Form("Added forecast accuracy as a neighbour number")):
     cat = get_catalog()
-    c = contracts.latest(CID)
-    if not c:
-        return JSONResponse({"ok": False, "error": "No contract yet."}, status_code=409)
-    fa = cat.canonical_kpi("Demand Forecast Accuracy")
-    if fa in c["neighbour_kpis"]:
-        return JSONResponse({"ok": False, "error": "Already in the contract."}, status_code=409)
-    c2 = dict(c)
-    c2["neighbour_kpis"] = [*c["neighbour_kpis"], fa]
-    try:
-        contracts.save(c2, LEAD, reason)
-    except ValueError as e:
-        return JSONResponse({"ok": False, "error": str(e)}, status_code=422)
+    with store.WRITE_LOCK:
+        c = contracts.latest(CID)
+        if not c:
+            return JSONResponse({"ok": False, "error": "No contract yet."}, status_code=409)
+        fa = cat.canonical_kpi("Demand Forecast Accuracy")
+        if fa in c["neighbour_kpis"]:
+            return JSONResponse({"ok": False, "error": "Already in the contract."}, status_code=409)
+        c2 = dict(c)
+        c2["neighbour_kpis"] = [*c["neighbour_kpis"], fa]
+        try:
+            contracts.save(c2, LEAD, reason)
+        except ValueError as e:
+            return JSONResponse({"ok": False, "error": str(e)}, status_code=422)
     return {"ok": True}
 
 
