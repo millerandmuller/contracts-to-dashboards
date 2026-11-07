@@ -61,7 +61,8 @@
     <div class="zlabel"><span>B · NEXT TO THE LEAD NUMBER · ΔPY % (PREVIOUS MONTH)</span><span>AC · PY</span></div>
     {% if v.focus %}<table class="nbr">{% for n in v.neighbours %}
       <tr><td>{{ n.plain }}</td><td class="num"><b>{{ n.latest|fmt(1 if n.unit!='units' else 0) }}</b> <span class="ctxc">{{ n.unit }}</span><sup class="fn">[{{ n.note }}]</sup></td>
-      {% if n.series %}<td class="num ctxc">{{ n.prev|fmt(1 if n.unit!='units' else 0) }}</td><td>{{ pct_lollipop(n.pct) }}</td><td class="num">{{ n.pct|signed(0) if n.pct is not none else '–' }} %</td>
+      {% if n.series and n.unit == 'units' %}<td colspan="3" class="ctxc">Volume, no line in the contract. Shown as is, not compared.</td>
+      {% elif n.series %}<td class="num ctxc">{{ n.prev|fmt(1) }}</td><td>{{ pct_lollipop(n.pct) }}</td><td class="num">{{ n.pct|signed(0) if n.pct is not none else '–' }} %</td>
       {% else %}<td colspan="3" class="ctxc">{{ n.gap }}</td>{% endif %}</tr>{% endfor %}</table>{% endif %}
   </div>
   <div class="zf foot">{% for f in v.foots %}<span>[{{ loop.index }}] {{ f }}</span>{{ ' · ' if not loop.last }}{% endfor %} · <a href="/audit">audit log</a></div>
