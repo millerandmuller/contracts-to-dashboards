@@ -36,7 +36,7 @@
           <div class="hmain"><span class="hid">{{ h.handover_id }}</span>
             <span class="hstate"><span class="chip chip-{{ h.state }}" data-chip="{{ h.state }}"><span class="shape" aria-hidden="true">{{ chips[h.state] }}</span> {{ h.state }}</span>
               {% if h.overdue %}<span class="badge bad">OVERDUE</span>{% endif %}<span class="due">{{ due_text(h) }}</span></span>
-            <span class="htext">{% if v.role==h.to_role %}← from {{ h.from_role }}{% else %}→ {{ h.to_role }}{% endif %} · pair <span class="hid">{{ h.pair }}</span><br>asked: {{ h.requested_action }}</span>
+            <span class="htext">{% if v.role==h.to_role %}← from {{ h.from_role }}{% else %}→ {{ h.to_role }}{% endif %} · {{ 'model' if h.kind == 'refresh' else 'pair' }} <span class="hid">{{ h.pair }}</span><br>asked: {{ h.requested_action }}</span>
           </div>
           {% for t in h.transitions if t.to_state != 'open' %}
             <div class="took">{% if t.to_state=='acknowledged' %}Seen and taken over by {{ t.by }}, {{ t.at|hhmm }}{% else %}Closed by {{ t.by }}, {{ t.at|hhmm }}: {{ t.reason }}{% endif %}</div>{% endfor %}

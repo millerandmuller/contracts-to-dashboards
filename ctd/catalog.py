@@ -17,7 +17,7 @@ PACK = DATA / "datapack.xlsx"
 SHEETS = [
     "Products", "Markets", "Owners", "KPI_Catalog", "Analytics_Assets", "Asset_KPI_Map",
     "Product_Market_Monthly", "Supply_Operations", "Business_Requests", "Governance_Rules",
-    "Governance_Signals", "Data_Quality",
+    "Governance_Signals", "Data_Quality", "Semantic_Models", "Lineage_Edges",
 ]
 
 # Request text -> the canonical KPIs the dashboard would need. Keyword table, not a model.

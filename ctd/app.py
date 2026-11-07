@@ -7,7 +7,7 @@ from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import builder, contracts, gateway, handovers, interview, pbip, preserve, reader, refuse, render, store
+from . import builder, contracts, gateway, handovers, interview, it, pbip, preserve, reader, refuse, render, store
 from .catalog import get_catalog
 
 ROOT = Path(__file__).resolve().parent
@@ -139,8 +139,8 @@ def _stage(request: Request, beat: int = 3):
     c = contracts.latest(CID)
     if not c:
         return None
-    views = [render.view_model(cat, c, v["for_role"]) for v in c["views"]]
-    shown = "after" if any(h["state"] != "open" for h in handovers.all_for(CID)) else "before"
+    views = [render.view_model(cat, c, v["for_role"]) for v in c["views"] if v.get("kind", "kpi") == "kpi"]  # the IT view has its own page
+    shown = "after" if any(h["state"] != "open" for h in handovers.all_for(CID) if h["to_role"] == c["escalation_to"]) else "before"
     last = [a for a in store.audit_rows(20) if a["action"] != "refusal_shown"][:1]  # the closing line follows the contract, not a visit to the refusal page
     return dict(c=c, views=views, versions=contracts.versions(CID), yaml=contracts.to_yaml(c), audit=store.audit_rows(8), shown=shown,
                 last_audit=last[0] if last else None)
@@ -172,6 +172,30 @@ def contract_card(request: Request):
              for p in preserve.config()["proposals"]]
     return html("card.html", request, 3, c=c, v=v, figs=figs, not_yours=onto[c["escalation_to"]]["example_action"],
                 props=props, window=handovers.RESPONSE_HOURS, owner_state=cat.owner_state(c["owner_id"]))
+
+
+@app.get("/it", response_class=HTMLResponse)
+def it_page(request: Request):
+    """The same contract from IT's side: the models behind it, their refresh, who gets the handover when one fails."""
+    cat = get_catalog()
+    c = contracts.latest(CID)
+    if not c:
+        return RedirectResponse("/interview?prepared=1", status_code=303)
+    last = [a for a in store.audit_rows(20) if a["action"] != "refusal_shown"][:1]
+    return html("it.html", request, 5, c=c, v=it.view_model(cat, c), added=it.has_view(c), rules=cat.rules(), last_audit=last[0] if last else None)
+
+
+@app.post("/contract/it-view")
+def contract_it_view():
+    with store.WRITE_LOCK:
+        c = contracts.latest(CID)
+        if not c:
+            return JSONResponse({"ok": False, "error": "No contract yet."}, status_code=409)
+        try:
+            it.add_view(get_catalog(), c, LEAD)
+        except ValueError as e:
+            return JSONResponse({"ok": False, "error": str(e)}, status_code=409)
+    return {"ok": True}
 
 
 @app.post("/contract/v2")

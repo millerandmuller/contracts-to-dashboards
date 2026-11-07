@@ -168,3 +168,9 @@ table.cases tr.why td{white-space:normal;font-size:12.5px;border-bottom:2px soli
 .auditpre{display:grid;grid-template-columns:9rem 14rem minmax(0,1fr) minmax(0,1.2fr) auto;gap:14px;align-items:end;padding:8px 0;font-size:12.5px}
 .rlabel{font-size:11px;color:var(--ctx)}
 .decided{border-left:3px solid var(--navy);background:var(--tint);padding:8px 12px;margin:8px 0;font-size:13px}
+/* IT view */
+.card.wide{max-width:1180px}
+.card.wide .zones{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}
+table.models td{white-space:nowrap}table.models td:last-child{white-space:normal}
+.chip.refresh-failed,.chip.refresh-warning,.chip.refresh-healthy{color:var(--ink)}
+.lin{font-size:12px;padding:3px 0;overflow-wrap:anywhere}

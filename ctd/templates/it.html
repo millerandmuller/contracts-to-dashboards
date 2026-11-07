@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% from "_macros.html" import figs as hfigs %}
+{% set chips = {'open': '○', 'acknowledged': '◐', 'closed': '●'} %}
+{% block kicker %}VIEWS · IT · <span class="mono">{{ c.contract_id }} v{{ c.version }}</span> · ROLE {{ v.onto.role|upper }}{% endblock %}
+{% block question %}Is the model behind this contract safe to reuse, and who takes it over when its refresh fails?{% endblock %}
+{% block body %}
+{% set k = v.kpi %}
+{% if not added %}
+<div class="split"><div class="mainc">
+  <div class="seclabel"><span>THE SAME CONTRACT, SEEN FROM IT</span></div>
+  <p class="lead2">The {{ v.onto.role }} decides {{ v.onto.example_decision }}. The contract already names this role before the {{ c.role }}. Adding the view makes a new version of the contract. It is configuration: the asset count stays at {{ counters.assets }}, the view count goes from {{ counters.views }} to {{ counters.views + 1 }}.</p>
+  <p class="ctx">What the view reads: Semantic_Models (refresh status, endorsement, owner) and Lineage_Edges (model to asset) for the {{ v.scope_assets|length }} {{ c.scope.product_name }} supply and inventory assets. {{ v.models|length }} models feed them.</p>
+  <div class="actbar"><span class="seclabel0">ACT · 300 S</span><button class="go" onclick="act('/contract/it-view',{},()=>location.reload())">Add the IT view to the contract</button><span class="ctx">writes v{{ c.version + 1 }} with name, time and reason</span></div>
+</div></div>
+{% else %}
+<div class="strip"><span>{{ c.contract_id }} v{{ c.version }} · Assets: {{ counters.assets }} · Views: {{ counters.views }}</span><span>rendered from contract, no manual edits</span></div>
+<section class="card wide" aria-label="View for {{ v.onto.role }}">
+  <div class="band">
+    <div class="bandtop"><h2 class="role">{{ v.onto.role }}</h2><span class="focusline">focus: models behind the contract, failed refresh first · Assets: {{ counters.assets }} · Views: {{ counters.views }}</span></div>
+    <div class="trail" data-trail>rendered from {{ c.contract_id }} v{{ c.version }} · same contract as the two role views · reads Semantic_Models and Lineage_Edges · rule v{{ rule_version }} · Assets: {{ counters.assets }}, Views: {{ counters.views }}</div>
+  </div>
+  <div class="zones">
+    <div class="zcol za">
+      <div class="zlabel"><span>A · STATUS · 3 S</span><span>MODELS BEHIND {{ c.contract_id }}</span></div>
+      <div class="ztitle">Models behind the contract that refresh without problems</div>
+      <div class="kfig">
+        <div><div class="kl">AC</div><div class="k24">{{ k.ac }}</div></div>
+        <div><div class="kl">PL</div><div class="k24 pl">{{ k.pl }}</div></div>
+        <div><div class="kl">ΔPL</div><div class="k24">{{ k.d|signed(0) }}</div></div>
+        <div><div class="kl">ΔPL %</div><div class="k24">{{ k.pct|signed(0) }} %</div></div>
+        <div class="vbar" aria-hidden="true"><i class="{{ 'good' if k.fav else 'bad' }}" style="width:{{ [100, k.pct|abs|round(0)]|min }}%"></i></div>
+      </div>
+      {% set bad = v.models|rejectattr('refresh', 'equalto', 'healthy')|list %}
+      <div class="sent">{{ bad|length }} of {{ v.models|length }} models do not refresh cleanly.{% for m in bad if m.refresh == 'failed' %} {{ m.model_id }} failed; it feeds {% for a in m.scope_assets %}{{ a.asset_id }} {{ a.name }} ({{ a.endorsement }}){% endfor %}.{% endfor %} <span class="fnr">[1]</span></div>
+      <table class="bypair models">
+        {% for m in v.models %}<tr><td><span class="chip refresh-{{ m.refresh }}"><span class="shape" aria-hidden="true">{{ m.shape }}</span> {{ m.refresh }}</span></td>
+          <td class="mono">{{ m.model_id }}</td><td>{{ m.name }}</td><td class="ctxc">{{ m.frequency }} · {{ m.endorsement }}</td>
+          <td>feeds {% for a in m.scope_assets %}<span class="mono">{{ a.asset_id }}</span>{% endfor %}{% if m.fed|length > m.scope_assets|length %} <span class="ctxc">+{{ m.fed|length - m.scope_assets|length }} more</span>{% endif %}</td>
+          <td class="ctxc">owner <span class="mono">{{ m.owner_id }}</span> {{ m.owner_state }}</td></tr>{% endfor %}
+      </table>
+      <div class="ctx">PL = every model behind the contract refreshes healthy; set when the IT view was added. Shape and word, never colour alone: ● healthy ◐ warning ○ failed.</div>
+      <div class="zlabel sub"><span>CAUSE · 30 S</span><span>LINEAGE, MODEL → ASSET · RULE-004 {{ rules['RULE-004'].rule_name|lower }}</span></div>
+      {% for m in bad %}<div class="lin mono">{{ m.model_id }} <span class="ctxc">({{ m.refresh }})</span> → {% for a in m.scope_assets %}{{ a.asset_id }} {{ a.name }}{% endfor %} → {{ m.fed|length - m.scope_assets|length }} more assets read the same model</div>{% endfor %}
+    </div>
+    <div class="zcol zc">
+      <div class="zc-in {{ 'frame' if v.counters.on_me }}">
+        <div class="zlabel"><span>C · ACT · 300 S</span><span>HO = HANDOVER RECORD</span></div>
+        <div class="counts"><span class="big14">Waiting on me: {{ v.counters.on_me|length }}</span><span>I am waiting on others: {{ v.counters.on_others|length }}</span></div>
+        {% for h in v.handovers %}
+        <div class="hrow {{ h.state }}" data-state="{{ h.state }}">
+          <div class="hmain"><span class="hid">{{ h.handover_id }}</span>
+            <span class="hstate"><span class="chip chip-{{ h.state }}" data-chip="{{ h.state }}"><span class="shape" aria-hidden="true">{{ chips[h.state] }}</span> {{ h.state }}</span>
+              {% if h.overdue %}<span class="badge bad">OVERDUE</span>{% endif %}<span class="due">{{ due_text(h) }}</span></span>
+            <span class="htext">← from {{ h.from_role }} · model <span class="hid">{{ h.pair }}</span><br>{{ h.observed_blocker }}<br>asked: {{ h.requested_action }}<br><span class="ctxc">record of truth: {{ h.system_of_record }}</span></span>
+          </div>
+          {% for t in h.transitions if t.to_state != 'open' %}
+            <div class="took">{% if t.to_state=='acknowledged' %}Seen and taken over by {{ t.by }}, {{ t.at|hhmm }}{% else %}Closed by {{ t.by }}, {{ t.at|hhmm }}: {{ t.reason }}{% endif %}</div>{% endfor %}
+          <div class="hact">{% if h.state=='open' %}<button class="go big" onclick="act('/handover/{{ h.handover_id }}/ack',{actor:'{{ v.onto.role }}'},()=>location.reload())">Acknowledge</button><span class="ctx">means: seen and taken over. Not done.</span>{% endif %}</div>
+        </div>
+        {% else %}<div class="ctx">No handovers. Every model behind the contract refreshes.</div>{% endfor %}
+      </div>
+      <div class="zlabel"><span>D · NEXT TO YOU</span><span>▮ IN FOCUS</span></div>
+      <div class="dcards">
+        <div class="dcard"><b>◂ before you:</b> {% for r in v.onto.upstream %}{{ r }}{% else %}nobody named in the role list{% endfor %}</div>
+        <div class="dcard infocus"><b>after you: ▸</b> {{ c.role }} (reads the stock numbers built on these models)<br>{{ v.counters.on_me|length }} open from them</div>
+      </div>
+    </div>
+  </div>
+  <div class="zb">
+    <div class="zlabel"><span>B · NEXT TO THE LEAD NUMBER · WHOLE CATALOG</span><span>AC</span></div>
+    <table class="nbr">
+      <tr><td>Models with a failed refresh, whole catalog</td><td class="num"><b>{{ v.wide.failed }}</b> <span class="ctxc">of {{ v.wide.models }}, {{ v.wide.failed_certified }} of them certified</span><sup class="fn">[2]</sup></td></tr>
+      <tr><td>Models with a refresh warning, whole catalog</td><td class="num"><b>{{ v.wide.warning }}</b> <span class="ctxc">of {{ v.wide.models }}</span><sup class="fn">[2]</sup></td></tr>
+      <tr><td>Assets that read the models behind this contract</td><td class="num"><b>{{ v.fed_all|length }}</b> <span class="ctxc">a broken refresh reaches all of them</span><sup class="fn">[3]</sup></td></tr>
+      <tr><td>Models with poor names for questions in plain language (RULE-007)</td><td class="num"><b>{{ v.wide.poor_ai }}</b> <span class="ctxc">of {{ v.wide.models }}</span><sup class="fn">[2]</sup></td></tr>
+    </table>
+  </div>
+  <div class="zf foot"><span>[1] Semantic_Models {% for m in v.models %}{{ m.model_id }}{{ ', ' if not loop.last }}{% endfor %} · Analytics_Assets {{ v.scope_assets|join(', ') }}</span> · <span>[2] Semantic_Models: refresh_status, endorsement, ai_readiness</span> · <span>[3] Lineage_Edges MODEL_TO_ASSET</span> · <a href="/audit">audit log</a></div>
+</section>
+{% if last_audit %}<div class="closer"><div class="mono lastaudit">{{ last_audit.at[:16]|replace('T',' ') }} · {{ last_audit.actor }} · {{ last_audit.action|replace('_',' ') }} {{ last_audit.subject }}{% if last_audit.reason %} · reason: {{ last_audit.reason }}{% endif %}</div>
+<div class="legend">AC ■ actual · PL □ every model healthy, a line not a budget · ΔPL red unfavourable, green favourable · only the receiver can acknowledge · overdue never turns green</div></div>{% endif %}
+{% endif %}
+{% endblock %}
