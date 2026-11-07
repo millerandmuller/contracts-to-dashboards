@@ -1,6 +1,7 @@
 """FastAPI app. Six pages, one per demo beat. State lives in SQLite; reload never loses it."""
 from __future__ import annotations
 
+from datetime import date, datetime
 from pathlib import Path
 
 from fastapi import FastAPI, Form, Request
@@ -18,6 +19,7 @@ app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
 REQUEST = "We need a monthly supply-risk dashboard by medicine and country."
 LEAD = "Supply Analytics Lead"
 RECEIVER = "Launch Excellence Lead"
+BI_RECEIVER = "Data Product Owner"  # who a dashboard request lands with in the BI team (Owners sheet)
 CID = "CON-SUPPLY-RISK"
 MAX_ANSWER = 500
 
@@ -28,8 +30,12 @@ def ctx(request: Request, beat: int, **kw) -> dict:
 
 def lead_owner() -> str:
     """The active owner the builder assigns to the Supply Analytics Lead, read from the Owners sheet."""
-    o = get_catalog().owners
-    return str(o[(o.role == LEAD) & (o.status == "active")].index[0])
+    return _active_owner(get_catalog(), LEAD)
+
+
+def _active_owner(cat, role: str) -> str:
+    o = cat.owners
+    return str(o[(o.role == role) & (o.status == "active")].index[0])
 
 
 def html(name: str, request: Request, beat: int, **kw) -> HTMLResponse:
@@ -73,13 +79,16 @@ def _inbox(cat, a: dict) -> dict:
     ]
     top = max(abs(r[1] - r[2]) for r in rows) or 1
     table = [{"measure": m, "ac": ac, "pl": pl, "rule": rule, "bar": _bar(ac, pl, top), "cite": cite} for m, ac, pl, rule, cite in rows]
-    first = a["requests"][0]["request_date"] if a["requests"] else ""
+    dated = sorted(a["requests"], key=lambda r: r["request_date"])
+    kinds = cat.assets.loc[[x["asset_id"] for x in a["assets"]], "asset_type"].value_counts()
     return {
         "figs": [[{"label": "SAME REQUEST, AC", "value": n_req}, {"label": "PL", "value": 1, "cls": "pl"},
-                  {"label": "ΔPL", "value": f"+{n_req - 1}" if n_req > 1 else str(n_req - 1)}, {"label": "ΔPL, BAR", "bar": min(100, (n_req - 1) * 10), "fav": n_req <= 1}],
-                 [{"label": "NUMBERS COVERED", "value": len(a["covered_kpis"]), "unit": f"of {len(a['needed'])}"},
-                  {"label": "INACTIVE OWNERS", "value": len(a["stale_owners"]), "unit": f"of {len(a['assets'])}"}]],
-        "first_month": first[:7], "table": table, "assets_total": len(cat.assets),
+                  {"label": "ΔPL", "value": f"+{n_req - 1}" if n_req > 1 else str(n_req - 1)}, {"label": "ΔPL, BAR", "bar": min(100, (n_req - 1) * 10), "fav": n_req <= 1}]],
+        "first_month": dated[0]["request_date"][:7] if dated else "", "table": table, "assets_total": len(cat.assets),
+        "first_month_name": datetime.strptime(dated[0]["request_date"], "%Y-%m-%d").strftime("%B") if dated else "",
+        "latest": dated[-1] if dated else None, "received": date.today().isoformat(),
+        "sender": {"role": LEAD, "id": lead_owner()}, "to": {"role": BI_RECEIVER, "id": _active_owner(cat, BI_RECEIVER)},
+        "asset_kinds": ", ".join(f"{n} {k.lower()}{'s' if n > 1 else ''}" for k, n in kinds.items()),
         "covered_names": [kpi_name(k) for k in a["covered_kpis"]], "uncovered_names": [kpi_name(k) for k in a["uncovered_kpis"]],
         "asset_types": cat.assets.asset_type.value_counts().to_dict(),
     }

@@ -215,3 +215,25 @@ table.missing{margin:8px 0}table.missing th{text-transform:none;letter-spacing:0
 .yourcall{border:1px dashed var(--blue);padding:8px 12px;margin-top:8px}
 .pvw{border:1px solid var(--line);padding:8px 10px;font-size:12.5px}.pvw>b{color:var(--navy);display:block;margin-bottom:4px}
 .hv.small{font-size:13px;font-family:var(--mono);padding-bottom:4px}
+/* F15: numbered demo path in the nav, Next button on every page, inbox as one sequence */
+nav.side a .n{display:inline-block;width:16px;font-family:var(--mono);font-size:11px;color:#9FB3C1}
+nav.side a.on .n{color:#fff}
+.nextbar{display:flex;gap:14px;align-items:center;justify-content:flex-end;margin:20px 0 0;padding-top:12px;border-top:1px solid var(--line)}
+/* the fold holds only the sequence; evidence and Next start below it */
+.inbox{max-width:860px;min-height:calc(100vh - 110px)}
+.msg{border:1px solid var(--navy);padding:10px 16px 10px}
+.msg .mhead{display:flex;flex-wrap:wrap;gap:6px 22px;align-items:center;font-size:13px}
+.msg .req{border:0;padding:0;margin:8px 0 6px;font-size:20px;max-width:none}
+.msg .ctx{font-size:11px}
+.answer{font-size:22px;font-weight:600;color:var(--navy);margin:14px 0 6px}
+ol.stepper{list-style:none;margin:0;padding:0;border-top:1px solid var(--navy)}
+ol.stepper>li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;border-bottom:1px solid var(--line);padding:6px 0;font-size:14px}
+ol.stepper .sn{font-family:var(--mono);font-weight:600;color:var(--navy)}
+ol.stepper .sh{font-weight:600}
+details.recs summary{cursor:pointer;font-size:12px;color:var(--navy);margin-top:2px}
+details.recs[open]{padding-bottom:4px}
+details.recs .kids,details.recs .ctx,details.recs .ksheet{font-size:12px;margin-top:3px;text-align:left}
+.inbox .actbar{margin-top:12px}
+p.who{font-size:13px;color:var(--ctx);margin:6px 0 0}
+details.evidence{margin-top:28px;border-top:2px solid var(--navy);padding-top:6px}
+details.evidence>summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--navy)}

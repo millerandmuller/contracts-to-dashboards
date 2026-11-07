@@ -31,13 +31,47 @@ def test_every_page_has_the_left_navigation_and_no_wizard_bar(client, path):
     for label in ["Inbox", "Three questions", "Two roles, one contract", "Consolidation", "Shift Team Lead request", "Audit log", "Export to Power BI"]:
         assert label in html
     assert "SYSTEM" not in html and "After acknowledgement" not in html
-    assert len(re.findall(r'<a href="[^"]*" class="on">', html)) <= 1
+    assert len(re.findall(r'<a href="[^"]*" class="on"', html)) <= 1
     assert re.search(r'id="counter"[^>]*>Assets: <b>1</b> · Views: <b>2</b>', html), "counter missing on " + path
 
 
 def test_active_chapter_carries_the_marker(client):
-    assert re.search(r'<a href="/audit" class="on">Audit log', client.get("/audit").text)
-    assert re.search(r'<a href="/contract#views" class="on">Two roles', client.get("/contract").text)
+    assert re.search(r'<a href="/audit" class="on" data-step="9"><span class="n">9</span>Audit log', client.get("/audit").text)
+    assert re.search(r'<a href="/contract#views" class="on" data-step="4"><span class="n">4</span>Two roles', client.get("/contract").text)
+    assert re.search(r'<a href="/shift" class="on" data-step="7">', client.get("/shift").text)
+
+
+ORDER = ["Inbox", "Three questions", "Contract", "Two roles, one contract", "IT: the model behind it", "Consolidation",
+         "Shift Team Lead request", "Export to Power BI", "Audit log"]
+
+
+def test_nav_numbers_the_demo_path_one_to_nine_and_keeps_the_groups(client):
+    nav = client.get("/").text.split('<nav class="side"')[1].split("</nav>")[0]
+    got = re.findall(r'data-step="(\d)"><span class="n">\d</span>([^<]+)', nav)
+    assert got == [(str(i + 1), label) for i, label in enumerate(ORDER)]
+    assert re.findall(r'<div class="grp">(\w+)</div>', nav) == ["REQUEST", "VIEWS", "GOVERNANCE"]
+
+
+@pytest.mark.parametrize("path,want", [("/", "Next: Three questions"), ("/interview", "Next: Contract"), ("/contract/card", "Next: Two roles, one contract"),
+                                       ("/contract", "Next: IT: the model behind it"), ("/it", "Next: Consolidation"), ("/consolidate", "Next: Shift Team Lead request"),
+                                       ("/shift", "Next: Export to Power BI"), ("/export", "Next: Audit log"), ("/audit", "Back to the Inbox")])
+def test_every_page_ends_with_the_next_page_of_the_demo(client, path, want):
+    page = client.get(path).text
+    m = re.search(r'<a class="btn go" id="next" href="([^"]+)">([^<]+)</a>', page)
+    assert m and m.group(2) == want, path
+    nxt = ORDER[(ORDER.index(want.removeprefix("Next: ")) if want.startswith("Next") else 0)]
+    assert nxt in page.split('<nav class="side"')[1].split("</nav>")[0]
+    assert page.index('id="next"') > page.index("</nav>") and page.index('id="next"') < page.index("<footer>")
+
+
+def test_next_follows_the_curated_shift_page_and_greys_out_without_a_contract():
+    store.reset()
+    c = TestClient(app, follow_redirects=False)
+    page = c.get("/").text
+    assert 'id="next" href="/interview">Next: Three questions' in page
+    assert re.search(r'<a class="btn na" id="next" href="/contract/card"[^>]*>Next: Contract</a><span class="ctx">needs a contract first', c.get("/interview").text)
+    c.post("/shift/curated/create")
+    assert re.search(r'id="next" href="/export"[^>]*>Next: Export to Power BI', c.get("/shift/curated").text)
 
 
 def test_fonts_and_licence_are_served(client):

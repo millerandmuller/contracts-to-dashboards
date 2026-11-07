@@ -3,13 +3,10 @@
 <title>{% block title %}Contracts to Dashboards{% endblock %}</title>
 <link rel="stylesheet" href="/static/tokens.css"><link rel="stylesheet" href="/static/app.css"><script src="/static/app.js" defer></script></head>
 <body>
-{% set nav = [('REQUEST', [('Inbox','/','/'),('Three questions','/interview','/interview'),('Contract','/contract/card','/contract/card')]),
-  ('VIEWS', [('Two roles, one contract','/contract#views','/contract'),('IT: the model behind it','/it','/it')]),
-  ('GOVERNANCE', [('Consolidation','/consolidate','/consolidate'),('Shift Team Lead request','/shift','/shift'),('Audit log','/audit','/audit'),('Export to Power BI','/export','/export')])] %}
 <nav class="side" aria-label="Chapters">
   <div class="brand"><b>Contracts to Dashboards</b><span>governed analytics · prototype</span></div>
-  {% for grp, items in nav %}<div class="grp">{{ grp }}</div>
-  {% for label, href, match in items %}{% set needs = (not has_contract) and href not in ['/', '/interview', '/shift', '/audit'] %}<a href="{{ href }}" class="{{ 'on' if match and path==match }}{{ ' needs' if needs }}"{% if needs %} title="Needs a contract first. Answer the three questions."{% endif %}>{{ label }}{% if needs %}<span class="why">needs a contract</span>{% endif %}</a>{% endfor %}{% endfor %}
+  {% for n, grp, label, href, match in demo %}{% if loop.first or grp != loop.previtem[1] %}<div class="grp">{{ grp }}</div>{% endif %}
+  {% set needs = (not has_contract) and href not in no_contract_needed %}<a href="{{ href }}" class="{{ 'on' if path in match }}{{ ' needs' if needs }}" data-step="{{ n }}"{% if needs %} title="Needs a contract first. Answer the three questions."{% endif %}><span class="n">{{ n }}</span>{{ label }}{% if needs %}<span class="why">needs a contract</span>{% endif %}</a>{% endfor %}
   <div class="spacer"></div>
   <form method="post" action="/reset"><button class="ghost" title="Start the demo from zero">Reset demo</button></form>
   <div class="rule">rule <span class="mono">v{{ rule_version }}</span> · rendered from contract<br>{{ 'no manual edits' if manual_edits()==0 else manual_edits()|string ~ ' manual edits' }}<br>synthetic data pack</div>
@@ -20,6 +17,8 @@
     <div class="pagemeta">{% block pagemeta %}{% endblock %}<span class="counter" id="counter" title="Views are configuration over a contract. They never count as assets.">Assets: <b>{{ counters.assets }}</b> · Views: <b>{{ counters.views }}</b></span></div>
   </div>
   {% block body %}{% endblock %}
+  {% set nx = demo_next(path) %}{% if nx %}{% set needs = (not has_contract) and nx.href not in no_contract_needed %}
+  <div class="nextbar"><a class="btn {{ 'na' if needs else 'go' }}" id="next" href="{{ nx.href }}"{% if needs %} title="Needs a contract first. Answer the three questions."{% endif %}>{{ 'Back to the Inbox' if nx.back else 'Next: ' ~ nx.label }}</a>{% if needs %}<span class="ctx">needs a contract first: answer the three questions</span>{% endif %}</div>{% endif %}
   <footer>Data: synthetic data pack from the organizer. Role list, formulas, interview answers and cached texts are curated and marked. Nothing here is a real plant, person or number from a plant.</footer>
 </main>
 <div class="toast" id="toast" role="status"></div>

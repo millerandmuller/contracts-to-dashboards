@@ -26,9 +26,12 @@ def figs(page: str) -> list[tuple[str, str]]:
 
 
 def test_inbox_header_figures_are_the_pack_counts(client):
-    f = dict(figs(client.get("/").text))
-    assert f["SAME REQUEST, AC"] == "9" and f["PL"] == "1" and f["ΔPL"] == "+8"
-    assert f["NUMBERS COVERED"] == "3" and f["INACTIVE OWNERS"] == "2"
+    page = client.get("/").text
+    f = dict(figs(page))
+    assert f == {"SAME REQUEST, AC": "9", "PL": "1", "ΔPL": "+8"}  # covered numbers and inactive owners live in the stepper
+    steps = page.split('id="stepper"')[1].split("</ol>")[0]
+    assert "requested 9 times since August" in steps and "6 existing assets already cover 3 of 4 numbers" in steps
+    assert "2 of them belong to people who left" in steps
 
 
 def test_inbox_catalog_table_counts_from_the_pack(client):
@@ -83,3 +86,37 @@ def test_change_column_is_plain_words():
     from ctd.render import changed
     assert changed('views: [{"for_role": "A; B"}] -> []; neighbour_kpis: [] -> ["x"]') == "views, numbers next to it changed"
     assert changed("created") == "created"
+
+
+def test_inbox_is_a_message_an_answer_a_stepper_and_one_button(client):
+    page = client.get("/").text
+    body = page.split("</nav>")[1]
+    msg = body.split('id="msg"')[1].split('id="answer"')[0]
+    assert "<b>From:</b> Supply Analytics Lead" in msg and "OWN-005" in msg
+    assert "<b>To:</b> Data Product Owner · BI team" in msg and "OWN-004" in msg and "○</span> open" in msg
+    assert "the pack does not record who asked" in msg and "REQ-0101 of 2026-10-05" in msg
+    assert "A 10th dashboard? No." in body
+    order = [body.index(x) for x in ('id="msg"', 'id="answer"', 'id="stepper"', "Ask the three questions", "not to the person who builds", 'id="evidence"')]
+    assert order == sorted(order)
+    steps = body.split('id="stepper"')[1].split("</ol>")[0]
+    assert steps.count('<span class="sn">') == 6 + (0 if "in one sentence" not in steps else 1)
+    assert "cached" not in body.split('id="evidence"')[0]  # no cached explanation paragraph above the evidence
+
+
+def test_show_records_toggles_are_closed_and_hold_the_ids(client):
+    page = client.get("/").text
+    toggles = re.findall(r'<details class="recs"( open)? data-toggle="(\w+)">(.*?)</details>', page, re.S)
+    assert [t[1] for t in toggles] == ["requests", "assets", "owners"] and not any(t[0] for t in toggles)
+    a = get_catalog().analyze("We need a monthly supply-risk dashboard by medicine and country.")
+    req, ast, own = (t[2] for t in toggles)
+    assert all(r["request_id"] in req for r in a["requests"]) and "Business_Requests" in req
+    assert all(x["asset_id"] in ast for x in a["assets"]) and "Analytics_Assets" in ast
+    assert all(s["owner_id"] in own for s in a["stale_owners"]) and "sheet Owners" in own
+
+
+def test_evidence_section_is_closed_and_keeps_every_footnote(client):
+    page = client.get("/").text
+    ev = page.split('<details class="evidence" id="evidence">')[1].split('<div class="nextbar"')[0]
+    assert ev.startswith("<summary>Evidence and sources</summary>")
+    for s in ("Assets without an active owner", "Numbers with more than one definition", "RULE-001", "RULE-008", "[4] contract store", "numbers covered", "inactive owners", "Instead of a 10th dashboard"):
+        assert s in ev, s

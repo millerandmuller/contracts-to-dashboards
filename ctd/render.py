@@ -155,6 +155,34 @@ env.globals["due_text"] = due_text
 env.globals["view_template"] = view_template
 env.globals["rule_version"] = RULE_VERSION
 env.globals["manual_edits"] = lambda: store.audit_count("view_edited")
+
+# The demo path in its one order: (number, group, label, link, paths that count as this page). Nav and Next buttons both read it.
+DEMO = [
+    (1, "REQUEST", "Inbox", "/", ["/"]),
+    (2, "REQUEST", "Three questions", "/interview", ["/interview"]),
+    (3, "REQUEST", "Contract", "/contract/card", ["/contract/card"]),
+    (4, "VIEWS", "Two roles, one contract", "/contract#views", ["/contract"]),
+    (5, "VIEWS", "IT: the model behind it", "/it", ["/it"]),
+    (6, "GOVERNANCE", "Consolidation", "/consolidate", ["/consolidate"]),
+    (7, "GOVERNANCE", "Shift Team Lead request", "/shift", ["/shift", "/shift/curated"]),
+    (8, "GOVERNANCE", "Export to Power BI", "/export", ["/export"]),
+    (9, "GOVERNANCE", "Audit log", "/audit", ["/audit"]),
+]
+NO_CONTRACT_NEEDED = {"/", "/interview", "/shift", "/audit"}
+
+
+def demo_next(path: str) -> dict | None:
+    """The button at the foot of a page: the next page of the demo, or back to the Inbox from the last one."""
+    i = next((k for k, d in enumerate(DEMO) if path in d[4]), None)
+    if i is None:
+        return None
+    n = DEMO[(i + 1) % len(DEMO)]
+    return {"label": n[2], "href": n[3], "back": i == len(DEMO) - 1}
+
+
+env.globals["demo"] = DEMO
+env.globals["demo_next"] = demo_next
+env.globals["no_contract_needed"] = NO_CONTRACT_NEEDED
 env.filters["fmt"] = lambda v, d=1: "–" if v is None else (f"{v:,.{d}f}" if isinstance(v, float) else f"{v:,}")
 env.filters["signed"] = lambda v, d=0: ("−" if v < 0 else "+" if v > 0 else "±") + f"{abs(v):.{d}f}"
 env.filters["hhmm"] = lambda s: s[11:16] if s else ""
