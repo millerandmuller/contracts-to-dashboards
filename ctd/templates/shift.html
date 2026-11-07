@@ -11,8 +11,11 @@
 {% if g.supported %}
 <div class="passed">This role has catalog support. <a href="/interview">Build its contract</a> the same way.</div>
 {% else %}
-<div class="blocked"><b>Nothing was built.</b> {{ text.text }}
-  {% if text.cached %}<span class="badge cached" title="{{ text.why }}">cached</span>{% endif %}</div>
+<div class="blocked" id="refusal"><b>Nothing was built.</b> <span id="refusal-text">{{ text.text }}</span>
+  <span class="badge cached" id="refusal-badge" title="{{ text.why }}">cached</span></div>
+{% if live %}<script>
+fetch('/shift.json?role={{ role|urlencode }}').then(r=>r.json()).then(j=>{if(j.cached)return;document.getElementById('refusal-text').textContent=j.text;const b=document.getElementById('refusal-badge');if(b)b.remove()}).catch(()=>{});
+</script>{% endif %}
 <h3>What is missing</h3>
 <table><tr><th>Kind</th><th>Missing</th><th>Checked</th></tr>
 {% for m in g.missing %}<tr><td>{{ m.kind }}</td><td>{{ m.what }}</td><td class="cite">{{ m.checked }}</td></tr>

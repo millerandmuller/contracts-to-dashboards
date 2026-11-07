@@ -197,25 +197,41 @@ def explain_json():
     return gateway.complete("Explain in 2 or 3 short sentences why a tenth dashboard is the wrong move.", facts, fx["cached"]["explain_cluster"])
 
 
+SHIFT_TIMEOUT_S = 2.0  # the refusal never waits longer than this for the model; the page itself never waits
+
+
+def _shift_text(role: str):
+    g = refuse.gaps_for(get_catalog(), role)
+    facts = "\n".join(f"- {m['kind']}: {m['what']}" for m in g["missing"])
+    o = g["ontology"]
+    base = (f"Your decision is about {o['example_decision']}. This catalog cannot show that yet. "
+            "What is missing is listed below. Nothing was built, so nothing can mislead you.")
+    return g, base, facts
+
+
+@app.get("/shift.json")
+def shift_json(role: str = "Shift Team Lead"):
+    """Model wording for the refusal. The page shows the prepared text at once and swaps this in if it arrives within 2 s."""
+    if role not in interview.ontology_by_role():
+        role = "Shift Team Lead"
+    _, base, facts = _shift_text(role)
+    return gateway.complete("Say honestly, in 2 short sentences, why nothing is shown for this role.", facts, base, timeout=SHIFT_TIMEOUT_S)
+
+
 @app.get("/shift", response_class=HTMLResponse)
 def shift(request: Request, role: str = "Shift Team Lead", step: int = 0):
     cat = get_catalog()
     if role not in interview.ontology_by_role():
         role = "Shift Team Lead"
-    g = refuse.gaps_for(cat, role)
-    fx = gateway.fixture("interview_supply_analytics_lead.json")
-    facts = "\n".join(f"- {m['kind']}: {m['what']}" for m in g["missing"])
+    g, base, _ = _shift_text(role)
     if g["missing"]:
         with store.WRITE_LOCK:
             if not any(d["role"] == role for d in store.decisions("refusal_seen")):
                 store.put_decision("refusal_seen", {"role": role})
                 store.audit(role, "refusal_shown", role, "the catalog cannot serve this role; a gap was named instead of a view")
-    o = g["ontology"]
-    base = (f"Your decision is about {o['example_decision']}. This catalog cannot show that yet. "
-            "What is missing is listed below. Nothing was built, so nothing can mislead you.")
-    text = gateway.complete("Say honestly, in 2 short sentences, why nothing is shown for this role.", facts, base)
+    text = {"text": base, "cached": True, "why": "shown first, model wording swaps in if it answers within 2 s"}
     roles = [r["role"] for r in interview.ontology()]
-    return html("shift.html", request, 5, g=g, text=text, preview=refuse.handover_preview(role), roles=roles, role=role)
+    return html("shift.html", request, 5, g=g, text=text, preview=refuse.handover_preview(role), roles=roles, role=role, live=gateway.live())
 
 
 # ---- beat 6: export -------------------------------------------------------------------------------

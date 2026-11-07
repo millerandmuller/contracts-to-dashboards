@@ -56,8 +56,11 @@ def export(cat: Catalog, contract_id: str, version: int | None = None) -> dict:
         w = csv.writer(f, lineterminator="\n")
         w.writerow(["Product", "Market", "Month", "Measure", "Role", "Value", "ValueKind"])
         w.writerows(rows)
-    _json(root / "data" / "contract.json", c)
-    _write(root / "data" / "contract.yaml", contracts.to_yaml(c))
+    # the files carry version, name and reason of each change but no clock time: the time lives in the database and the audit log,
+    # so the same contract version always gives the same bytes, also after a reset and a new run
+    portable = {**c, "change_log": [{k: v for k, v in e.items() if k != "at"} for e in c.get("change_log", [])]}
+    _json(root / "data" / "contract.json", portable)
+    _write(root / "data" / "contract.yaml", contracts.to_yaml(portable))
 
     _json(root / f"{name}.pbip", {"$schema": "https://developer.microsoft.com/json-schemas/fabric/pbip/pbipProperties/1.0.0/schema.json",
                                   "version": "1.0", "artifacts": [{"report": {"path": f"{name}.Report"}}], "settings": {"enableAutoRecovery": True}})

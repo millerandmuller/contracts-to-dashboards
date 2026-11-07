@@ -142,3 +142,17 @@ def test_parallel_decisions_and_versions_stay_single(client):
         v2 = list(ex.map(lambda _: client.post("/contract/v2").status_code, range(10)))
     assert codes.count(200) == 1 and 500 not in codes
     assert v2.count(200) == 1
+
+
+def test_export_hash_is_equal_across_two_resets(client):
+    from ctd import pbip, store
+    import time
+    hashes = []
+    for _ in range(2):
+        client.post("/reset")
+        client.post("/contract/create", data=ANS)
+        hashes.append(pbip.export(get_catalog(), "CON-SUPPLY-RISK")["sha256"])
+        time.sleep(1.1)  # the stored change time differs between the runs; the files must not
+    assert hashes[0] == hashes[1]
+    assert all(e["at"] for e in __import__("ctd.contracts", fromlist=["x"]).latest("CON-SUPPLY-RISK")["change_log"])
+    assert store.audit_rows(1)[0]["at"]

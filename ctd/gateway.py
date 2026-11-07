@@ -25,9 +25,9 @@ def live() -> bool:
     return not OFFLINE and bool(os.environ.get("ANTHROPIC_API_KEY")) and time.time() >= _down_until
 
 
-def _ask(system: str, user: str, max_tokens: int) -> str:
+def _ask(system: str, user: str, max_tokens: int, timeout: float | None = None) -> str:
     import anthropic
-    client = anthropic.Anthropic(timeout=TIMEOUT_S, max_retries=0)
+    client = anthropic.Anthropic(timeout=timeout or TIMEOUT_S, max_retries=0)
     r = client.messages.create(model=MODEL, max_tokens=max_tokens, system=system, messages=[{"role": "user", "content": user}])
     text = "".join(b.text for b in r.content if getattr(b, "type", "") == "text").strip()
     if not text:
@@ -45,14 +45,14 @@ def _fallback_reason() -> str | None:
     return None
 
 
-def complete(task: str, facts: str, cached_text: str) -> dict:
+def complete(task: str, facts: str, cached_text: str, timeout: float | None = None) -> dict:
     """Return {'text', 'cached', 'why'}. Falls back to the fixture on no key, offline, timeout or any error."""
     why = _fallback_reason()
     if why:
         return {"text": cached_text, "cached": True, "why": why}
     global _down_until
     try:
-        return {"text": _ask(SYSTEM, f"Task: {task}\nFacts:\n{facts}", 300), "cached": False, "why": MODEL}
+        return {"text": _ask(SYSTEM, f"Task: {task}\nFacts:\n{facts}", 300, timeout), "cached": False, "why": MODEL}
     except Exception as e:  # noqa: BLE001 - any failure degrades to the fixture, visibly
         _down_until = time.time() + 120
         return {"text": cached_text, "cached": True, "why": f"{type(e).__name__}"}

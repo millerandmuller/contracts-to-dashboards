@@ -30,7 +30,7 @@ Works offline. With `ANTHROPIC_API_KEY` set, three short texts come from the mod
 | Short explanatory texts | `ctd/gateway.py` | yes, with fallback |
 | Interview reading: proposes contract fields from the answers; code checks every field; the contract is built from the checked result | `ctd/reader.py` | yes, with fixture fallback |
 
-The model never picks a number, a threshold, an owner or a state. On the interview page it proposes contract fields from the answers and quotes the words each one comes from; code parses the same answers, shows every disagreement by name and builds the contract from the parsed result. Unknown numbers or roles from the model are discarded. `CTD_VIEW=v1` draws the earlier role view.
+The model never picks a number, a threshold, an owner or a state. On the interview page it proposes contract fields from the answers and quotes the words each one comes from; code parses the same answers, shows every disagreement by name and builds the contract from the parsed result. Unknown numbers or roles from the model are discarded. `CTD_VIEW=v2` or `CTD_VIEW=v1` draws an earlier role view. The refusal page shows its prepared text at once and swaps in the model wording only if it arrives within 2 s. Exported files carry no clock time, so the same contract version gives the same bytes.
 
 ## Governance controls
 Retrieval finds, never decides · owner must be active · one contract per responsibility, neighbours are edges · views are configuration, not assets · only the receiving role acknowledges · closing needs a reason · overdue is computed and never green · missing data is a visible gap, never interpolated · audit log is append-only (database triggers) · every number carries a footnote with sheet and record.

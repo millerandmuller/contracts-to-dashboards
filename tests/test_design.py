@@ -86,3 +86,40 @@ def test_old_views_stay_behind_the_switch(client, monkeypatch):
     for v, marker in [("v2", "Line set in the contract:"), ("v1", "Focus rule:")]:
         monkeypatch.setenv("CTD_VIEW", v)
         assert marker in client.get("/contract").text
+
+
+def test_shift_page_answers_from_the_cache_while_the_model_is_dead(client, monkeypatch):
+    import time
+    from ctd import gateway
+
+    def dead(*a, **k):
+        time.sleep(30)
+    monkeypatch.setattr(gateway, "OFFLINE", False)
+    monkeypatch.setattr(gateway, "_down_until", 0.0)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+    monkeypatch.setattr(gateway, "_ask", dead)
+    t0 = time.time()
+    page = client.get("/shift").text
+    assert time.time() - t0 < 0.5
+    assert 'id="refusal-badge"' in page and "/shift.json?role=" in page and "Nothing was built." in page
+
+
+def test_shift_json_passes_a_two_second_timeout_and_falls_back(client, monkeypatch):
+    from ctd import gateway
+    seen = {}
+
+    def fake(system, user, max_tokens, timeout=None):
+        seen["t"] = timeout
+        raise TimeoutError()
+    monkeypatch.setattr(gateway, "OFFLINE", False)
+    monkeypatch.setattr(gateway, "_down_until", 0.0)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+    monkeypatch.setattr(gateway, "_ask", fake)
+    j = client.get("/shift.json").json()
+    assert seen["t"] == 2.0 and j["cached"] is True
+    monkeypatch.setattr(gateway, "_down_until", 0.0)
+
+
+def test_shift_offline_keeps_cached_text_and_badge(client):
+    page = client.get("/shift").text
+    assert 'id="refusal-badge"' in page and "<script>\nfetch('/shift.json" not in page
