@@ -18,6 +18,7 @@ REQUEST = "We need a monthly supply-risk dashboard by medicine and country."
 LEAD = "Supply Analytics Lead"
 RECEIVER = "Launch Excellence Lead"
 CID = "CON-SUPPLY-RISK"
+MAX_ANSWER = 500
 
 
 def ctx(request: Request, beat: int, **kw) -> dict:
@@ -58,7 +59,7 @@ def interview_page(request: Request, prepared: int = 0):
 @app.post("/interview", response_class=HTMLResponse)
 def interview_submit(request: Request, q1: str = Form(""), q2: str = Form(""), q3: str = Form(""), prepared: int = Form(0)):
     cat = get_catalog()
-    answers = {"q1": q1, "q2": q2, "q3": q3}
+    answers = {"q1": q1[:MAX_ANSWER], "q2": q2[:MAX_ANSWER], "q3": q3[:MAX_ANSWER]}
     base = dict(role=LEAD, qs=interview.questions(LEAD), answers=answers, prepared=bool(prepared), existing=contracts.latest(CID))
     follow = interview.ownership_check(LEAD, q1) if q1.strip() else None
     if not (q1.strip() and q2.strip() and q3.strip()):
@@ -80,21 +81,26 @@ def interview_reading(request: Request, q1: str = Form(""), q2: str = Form(""), 
     try:
         c = builder.propose(get_catalog(), LEAD, answers, get_catalog().analyze(REQUEST))
         errs = contracts.validate(c, get_catalog())
-    except ValueError:
+        return HTMLResponse(render.page("_reading.html", reading=reader.ask_model(answers, errs)))
+    except Exception:  # noqa: BLE001 - the page already shows a card; a failed swap changes nothing
         return HTMLResponse("", status_code=204)
-    return HTMLResponse(render.page("_reading.html", reading=reader.ask_model(answers, errs)))
 
 
 @app.post("/contract/create")
 def contract_create(q1: str = Form(...), q2: str = Form(...), q3: str = Form(...)):
+    if max(len(q1), len(q2), len(q3)) > MAX_ANSWER:
+        return JSONResponse({"ok": False, "error": "Please keep each answer short."}, status_code=422)
     cat = get_catalog()
     a = cat.analyze(REQUEST)
     try:
         c = builder.propose(cat, LEAD, {"q1": q1, "q2": q2, "q3": q3}, a)
-        saved = contracts.save(c, LEAD, "created from the repeated request cluster")
+        with store.WRITE_LOCK:
+            if contracts.latest(CID):  # a double click or a second create never makes a second version; changes go through v2
+                return RedirectResponse("/contract", status_code=303)
+            saved = contracts.save(c, LEAD, "created from the repeated request cluster")
+            handovers.open_from_rule(cat, saved)
     except ValueError as e:
         return JSONResponse({"ok": False, "error": str(e)}, status_code=422)
-    handovers.open_from_rule(cat, saved)
     return RedirectResponse("/contract", status_code=303)
 
 
@@ -195,9 +201,11 @@ def shift(request: Request, role: str = "Shift Team Lead", step: int = 0):
     g = refuse.gaps_for(cat, role)
     fx = gateway.fixture("interview_supply_analytics_lead.json")
     facts = "\n".join(f"- {m['kind']}: {m['what']}" for m in g["missing"])
-    if g["missing"] and not any(d["role"] == role for d in store.decisions("refusal_seen")):
-        store.put_decision("refusal_seen", {"role": role})
-        store.audit(role, "refusal_shown", role, "the catalog cannot serve this role; a gap was named instead of a view")
+    if g["missing"]:
+        with store.WRITE_LOCK:
+            if not any(d["role"] == role for d in store.decisions("refusal_seen")):
+                store.put_decision("refusal_seen", {"role": role})
+                store.audit(role, "refusal_shown", role, "the catalog cannot serve this role; a gap was named instead of a view")
     o = g["ontology"]
     base = (f"Your decision is about {o['example_decision']}. This catalog cannot show that yet. "
             "What is missing is listed below. Nothing was built, so nothing can mislead you.")
@@ -214,14 +222,16 @@ def export_page(request: Request):
 
 @app.post("/export", response_class=HTMLResponse)
 def export_run(request: Request):
-    c = contracts.latest(CID)
-    if not c:
-        return RedirectResponse("/interview?prepared=1", status_code=303)
-    res = pbip.export(get_catalog(), CID)
-    again = pbip.export(get_catalog(), CID)  # the proof on screen: same contract, same hash, twice
-    store.audit(c["role"], "pbip_exported", f"{CID} v{c['version']}", f"project folder written, hash {res['sha256'][:12]}")
-    sm = pbip.summary(res)
-    return html("export.html", request, 6, c=c, result=res, sm=sm, card=_closing_card(c, res, again, sm))
+    with store.WRITE_LOCK:  # one export at a time: the folder is rewritten from scratch
+        c = contracts.latest(CID)
+        if not c:
+            return RedirectResponse("/interview?prepared=1", status_code=303)
+        res = pbip.export(get_catalog(), CID)
+        again = pbip.export(get_catalog(), CID)  # the proof on screen: same contract, same hash, twice
+        sm = pbip.summary(res)
+        card = _closing_card(c, res, again, sm)
+        store.audit(c["role"], "pbip_exported", f"{CID} v{c['version']}", f"project folder written, hash {res['sha256'][:12]}")
+    return html("export.html", request, 6, c=c, result=res, sm=sm, card=card)
 
 
 def _closing_card(c: dict, res: dict, again: dict, sm: dict) -> list[dict]:
@@ -250,7 +260,8 @@ def audit_page(request: Request):
 
 @app.post("/reset")
 def reset():
-    store.reset()
+    with store.WRITE_LOCK:
+        store.reset()
     return RedirectResponse("/", status_code=303)
 
 

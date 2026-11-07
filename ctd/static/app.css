@@ -109,3 +109,5 @@ button.big{min-height:44px;min-width:9rem;font-size:1rem}
 .cline{display:grid;grid-template-columns:9rem minmax(0,1fr);gap:1rem;padding:.45rem 0;border-top:1px solid var(--line);font-size:1.05rem}
 .cline:first-child{border-top:0}.cline.gap b{color:var(--amber)}
 @media(max-width:900px){.three{grid-template-columns:1fr}}
+.trail{font-size:.95rem;color:#333}
+.three pre.tree{white-space:pre-wrap;word-break:break-all}

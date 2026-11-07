@@ -55,7 +55,7 @@ def ownership_check(role: str, decision_text: str) -> str | None:
 
 
 def parse_threshold(text: str) -> float | None:
-    m = re.search(r"(?:below|under|less than)\s+(\d+(?:\.\d+)?|[a-z]+)", text.lower())
+    m = re.search(r"(?:below|under|less than)\s+(\d+(?:\.\d+)?(?![\d.e])|[a-z]+)", text.lower())
     if not m:
         return None
     v = m.group(1)

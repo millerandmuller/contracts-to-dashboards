@@ -21,12 +21,12 @@
   {% for e in proposal.errors %}<div class="err">{{ e }}</div>{% endfor %}
   <div id="reading" data-live="0">{% include "_reading.html" %}</div>
 {% else %}
-  <div id="reading" data-live="{{ 1 if live else 0 }}">{% include "_reading.html" %}</div>
   <form method="post" action="/contract/create" class="row">
     <input type="hidden" name="q1" value="{{ answers.q1 }}"><input type="hidden" name="q2" value="{{ answers.q2 }}"><input type="hidden" name="q3" value="{{ answers.q3 }}">
     <button class="go" type="submit">Save as version 1 and render the views</button>
   </form>
+  <div id="reading" data-live="{{ 1 if live else 0 }}">{% include "_reading.html" %}</div>
 {% endif %}
-<pre class="yaml">{{ proposal.yaml }}</pre>
+<details><summary class="cite">Show the contract as YAML</summary><pre class="yaml">{{ proposal.yaml }}</pre></details>
 {% endif %}
 {% endblock %}

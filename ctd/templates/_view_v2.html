@@ -20,21 +20,8 @@
     <div class="cite">Amber line: {{ v.thr.amber|fmt(0) }} {{ v.thr.unit }}. {{ sparkline(f.series, v.thr.amber, 140, 24) }}{% if f.last_kind=='forecast_like' %}The latest month is a forecast, drawn hollow.{% endif %}</div>
   </div>
   <div>{{ f.sentence }}</div>
-  <div class="neigh">
-    {% for n in v.neighbours %}<div class="cell"><div class="cite">{{ n.plain }}</div>
-      <div class="v">{{ n.latest|fmt(1 if n.unit!='units' else 0) }} <span class="unit">{{ n.unit }}</span><sup class="fn">{{ n.note }}</sup></div>
-      {% if n.series %}{{ sparkline(n.series, none, 110, 22) }}{% else %}<div class="cite">{{ n.gap }}</div>{% endif %}</div>{% endfor %}
-  </div>
   {% else %}
   <p class="lead">Nothing has been passed to you. Nothing is red for two months in a row.</p>
-  {% endif %}
-
-  {% if v.rows|length > 1 or (v.rows|length==1 and not v.is_receiver) %}
-  <h3>Pairs <span class="shown">shown first: escalated pairs, then the worst pair</span></h3>
-  <table class="pairs">{% for r in v.rows %}<tr><td>{{ r.market_name }}</td><td class="num st-{{ r.status|replace(' ','') }}">{{ r.latest|fmt(1) }}<sup class="fn">{{ r.note }}</sup></td>
-    <td class="num cite">{% if r.change %}{{ '▲' if r.change.dir=='up' else '▼' if r.change.dir=='down' else '■' }} {{ '%+.1f'|format(r.change.abs) }}{% endif %}</td>
-    <td>{{ r.lolli }}</td>
-    <td>{% if r.escalated %}<span class="badge bad">2 months below</span>{% elif r.status=='ok' %}<span class="badge good">ok</span>{% else %}<span class="badge">{{ r.status }}</span>{% endif %}</td></tr>{% endfor %}</table>
   {% endif %}
 
   <h3>Handovers</h3>
@@ -56,6 +43,21 @@
     </div>
   </div>
   {% else %}<div class="cite">No handovers.</div>{% endfor %}
+
+  {% if v.focus %}
+  <div class="neigh">
+    {% for n in v.neighbours %}<div class="cell"><div class="cite">{{ n.plain }}</div>
+      <div class="v">{{ n.latest|fmt(1 if n.unit!='units' else 0) }} <span class="unit">{{ n.unit }}</span><sup class="fn">{{ n.note }}</sup></div>
+      {% if n.series %}{{ sparkline(n.series, none, 110, 22) }}{% else %}<div class="cite">{{ n.gap }}</div>{% endif %}</div>{% endfor %}
+  </div>
+  {% endif %}
+  {% if v.rows|length > 1 or (v.rows|length==1 and not v.is_receiver) %}
+  <h3>Pairs <span class="shown">shown first: escalated pairs, then the worst pair</span></h3>
+  <table class="pairs">{% for r in v.rows %}<tr><td>{{ r.market_name }}</td><td class="num st-{{ r.status|replace(' ','') }}">{{ r.latest|fmt(1) }}<sup class="fn">{{ r.note }}</sup></td>
+    <td class="num cite">{% if r.change %}{{ '▲' if r.change.dir=='up' else '▼' if r.change.dir=='down' else '■' }} {{ '%+.1f'|format(r.change.abs) }}{% endif %}</td>
+    <td>{{ r.lolli }}</td>
+    <td>{% if r.escalated %}<span class="badge bad">2 months below</span>{% elif r.status=='ok' %}<span class="badge good">ok</span>{% else %}<span class="badge">{{ r.status }}</span>{% endif %}</td></tr>{% endfor %}</table>
+  {% endif %}
 
   <div class="side">{% for s in v.side_roles %}<span>{{ s.kind }}: <b>{{ s.role }}</b>{% if s.waiting %} ({{ s.waiting }} waiting){% endif %}</span>{{ ' · ' if not loop.last }}{% endfor %}</div>
   <div class="foot">Sources<ol>{% for f in v.foots %}<li value="{{ loop.index }}">{{ f }}</li>{% endfor %}</ol></div>

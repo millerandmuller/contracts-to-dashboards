@@ -6,6 +6,7 @@ and a disagreement is shown, not resolved. Values the catalog does not know are 
 from __future__ import annotations
 
 import json
+import math
 import re
 
 from . import gateway
@@ -41,17 +42,24 @@ def _words(v) -> str:
 def _num(v) -> float | None:
     if isinstance(v, bool):
         return None
-    if isinstance(v, (int, float)):
-        return float(v)
-    s = str(v).strip().lower()
-    if s in WORDS:
-        return float(WORDS[s])
-    m = re.match(r"^\d+(?:\.\d+)?", s)
-    return float(m.group(0)) if m else None
+    try:
+        if isinstance(v, (int, float)):
+            f = float(v)
+        else:
+            s = str(v).strip().lower()[:40]
+            if s in WORDS:
+                return float(WORDS[s])
+            m = re.match(r"^\d+(?:\.\d+)?(?![\d.e,])", s)
+            f = float(m.group(0)) if m else None
+    except (OverflowError, ValueError):
+        return None
+    return f if f is not None and math.isfinite(f) else None
 
 
 def _allowed(key: str, v) -> str | None:
     """None when the model value is usable; otherwise the reason it is discarded."""
+    if isinstance(v, bool) or not isinstance(v, (str, int, float)) or len(str(v)) > 300:
+        return "not a usable value"
     if key == "kpi" and v not in KPI_SOURCE:
         return "not in the KPI catalog"
     if key == "escalation_to" and v not in ontology_by_role():
@@ -72,15 +80,16 @@ def _same(key: str, model, mine, thr: float | None) -> bool:
         return thr is not None and _num(model) == thr
     if key == "decision":
         a, b = _words(model), _words(mine)
-        return bool(a) and (a == b or a in b or b in a)
+        return len(a) >= 8 and (a == b or a in b or b in a)
     return _words(model) == _words(mine)
 
 
 def _shown(key: str, v) -> str:
     if key == "threshold":
         n = _num(v)
-        return str(v) if n is None else f"{n:g}"
-    return str(v)
+        if n is not None:
+            return f"{n:g}"
+    return str(v)[:80]
 
 
 def build(answers: dict, model: dict | None, source: str, why: str = "", errors: list[str] | None = None) -> dict:

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block body %}
 <h2>Export the contract as a Power BI project</h2>
-<p class="lead">{{ c.contract_id if c else 'No contract yet' }}{% if c %} version {{ c.version }}. No model is used here. Same contract, same files, every time.{% endif %}</p>
+<p class="lead">{{ c.contract_id if c else 'No contract yet' }}{% if c %} version {{ c.version }}. No model is used here. The same contract always gives the same files.{% endif %}</p>
 {% if c %}<form method="post" action="/export"><button class="go">Write the project folder</button></form>{% endif %}
 {% if result %}
 <h3>{{ result.name }} · hash {{ result.sha256[:16] }}</h3>

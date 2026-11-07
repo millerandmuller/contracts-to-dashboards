@@ -165,3 +165,52 @@ def test_honest_line_says_so_when_no_refusal_was_shown(client):
     client.post("/contract/create", data=ANS)
     page = client.post("/export").text
     assert "no refusal was shown in this run" in page
+
+
+# ---- revision round: races, hostile model values, one contract per create -------------------------------
+def test_parallel_exports_are_serialized_and_the_card_stays_true(client):
+    from concurrent.futures import ThreadPoolExecutor
+    client.post("/contract/create", data=ANS)
+    with ThreadPoolExecutor(10) as ex:
+        rs = list(ex.map(lambda _: client.post("/export"), range(10)))
+    assert all(r.status_code == 200 for r in rs)
+    assert all("same hash twice" in r.text and "hash differs" not in r.text for r in rs)
+
+
+def test_parallel_first_shift_visits_write_one_refusal_row(client):
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(10) as ex:
+        list(ex.map(lambda _: client.get("/shift"), range(10)))
+    assert len(store.decisions("refusal_seen")) == 1 and store.audit_count("refusal_shown") == 1
+
+
+@pytest.mark.parametrize("bad", [{"value": {"a": 1}}, {"value": [1]}, {"value": 10 ** 400}, {"value": float("nan")}, {"value": "x" * 5000}, {"value": True}, {"value": None}, "text", 7, None])
+def test_hostile_model_values_never_raise(bad):
+    for key in ("kpi", "escalation_to", "cadence", "direction", "threshold", "decision"):
+        r = reader.build(ANS, {**GOOD, key: bad}, "model")
+        row = next(x for x in r["rows"] if x["key"] == key)
+        assert row["status"] != "match" and len(row["text"]) < 600
+
+
+def test_one_letter_decision_is_not_a_match():
+    r = reader.build(ANS, {**GOOD, "decision": {"value": "o", "fragment": "o"}}, "model")
+    assert next(x for x in r["rows"] if x["key"] == "decision")["status"] == "conflict"
+
+
+def test_create_twice_keeps_one_version_and_one_handover(client):
+    assert client.post("/contract/create", data=ANS).status_code == 303
+    assert client.post("/contract/create", data=ANS).status_code == 303
+    assert contracts.versions("CON-SUPPLY-RISK") == [1]
+    assert client.post("/contract/create", data={**ANS, "q1": "x" * 600}).status_code == 422
+
+
+@pytest.mark.parametrize("q2", ["Stock below 1e999", "Stock below 4.5.6"])
+def test_odd_number_formats_are_refused(client, q2):
+    assert client.post("/contract/create", data={**ANS, "q2": q2}).status_code == 422
+
+
+def test_handover_comes_before_the_pairs_in_the_view(client):
+    client.post("/contract/create", data=ANS)
+    page = client.get("/contract").text
+    first = page.index("<section")
+    assert page.index("Handovers", first) < page.index("shown first:", first)
