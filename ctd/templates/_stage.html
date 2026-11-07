@@ -1,3 +1,6 @@
-<div class="two">
+<div class="strip"><span>state shown: <b>{{ shown }} acknowledgement</b></span><span>{{ c.contract_id }} v{{ c.version }} · Assets: {{ counters.assets }} · Views: {{ counters.views }}</span><span>rendered from contract, no manual edits</span></div>
+<div class="two cards">
 {% for v in views %}{% include view_template() %}{% endfor %}
 </div>
+{% if last_audit %}<div class="closer"><div class="mono lastaudit" data-lastaudit>{{ last_audit.at[:16]|replace('T',' ') }} · {{ last_audit.actor }} · {{ last_audit.action|replace('_',' ') }} {{ last_audit.subject }}{% if last_audit.reason %} · reason: {{ last_audit.reason }}{% endif %}</div>
+<div class="legend">AC ■ actual · PL □ line set in the contract (answer 2), not a budget · PY ▨ previous period · ΔPL red unfavourable, green favourable · only the receiver can acknowledge · overdue never turns green</div></div>{% endif %}

@@ -52,3 +52,37 @@ def test_no_amber_and_no_shadow_in_the_stylesheets():
     for name in ["app.css", "tokens.css"]:
         css = (STATIC / name).read_text().lower()
         assert "amber" not in css and "box-shadow" not in css and "gradient" not in css.replace("repeating-linear-gradient", ""), name
+
+
+def test_columns_equal_the_data_and_pl_is_the_contract_line(client):
+    from ctd import contracts
+    from ctd.catalog import get_catalog
+    c = contracts.latest("CON-SUPPLY-RISK")
+    page = client.get("/contract").text
+    got = re.findall(r'class="ac(?: fc)?" data-month="([\d-]+)" data-ac="([\d.]+)" data-pl="([\d.]+)"', page)
+    focus = "/".join([c["scope"]["product_id"], "CN"])
+    series = get_catalog().series(c["scope"]["product_id"], "CN")
+    want = [(p["month"], float(p["value"]), c["lead_kpi"]["threshold"]["amber"]) for p in series if p["value"] is not None]
+    assert len(got) == 2 * len(want) and focus
+    assert [(m, float(a), float(p)) for m, a, p in got[:len(want)]] == want
+
+
+def test_legend_names_the_line_and_never_calls_it_a_budget(client):
+    page = client.get("/contract").text
+    assert "line set in the contract (answer 2), not a budget" in page
+    assert not re.search(r"PL\s*[□=:·-]*\s*(plan|budget)\b|(plan|budget)\s*\(PL\)", page, re.I)
+
+
+def test_three_versions_of_the_handover_row(client):
+    page = client.get("/contract").text
+    assert page.count('class="hrow open"') == 2 and page.count("Waiting on me: 1") == 1 and "not available to you" in page
+    hid = "HO-" + page.split("HO-")[1][:12]
+    client.post(f"/handover/{hid}/ack", data={"actor": "Launch Excellence Lead"})
+    page = client.get("/contract").text
+    assert page.count("Seen and taken over by Launch Excellence Lead") == 2 and "state shown: <b>after acknowledgement" in page
+
+
+def test_old_views_stay_behind_the_switch(client, monkeypatch):
+    for v, marker in [("v2", "Line set in the contract:"), ("v1", "Focus rule:")]:
+        monkeypatch.setenv("CTD_VIEW", v)
+        assert marker in client.get("/contract").text

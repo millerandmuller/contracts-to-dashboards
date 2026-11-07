@@ -1,0 +1,68 @@
+{% set chips = {'open': '○', 'acknowledged': '◐', 'closed': '●'} %}
+{% set k = v.kpi %}
+<section class="card" aria-label="View for {{ v.role }}">
+  <div class="band">
+    <div class="bandtop"><h2 class="role">{{ v.role }}</h2><span class="focusline">focus: {{ v.focus_rule }} · Assets: {{ counters.assets }} · Views: {{ counters.views }}</span></div>
+    <div class="trail" data-trail>rendered from {{ v.audit_line.contract }} · owner {{ v.audit_line.owner }} · observed {{ v.audit_line.observed }} · rule {{ v.audit_line.rule }} · {{ v.audit_line.manual }} · Assets: {{ counters.assets }}, Views: {{ counters.views }}</div>
+  </div>
+  <div class="zones">
+    <div class="zcol za">
+      <div class="zlabel"><span>A · STATUS · 3 S</span><span>WEEKS · {{ v.focus.market_name|upper if v.focus }}</span></div>
+      {% if k %}{% set f = v.focus %}
+      <div class="ztitle">Stock cover in weeks, {{ f.market_name }}</div>
+      <div class="kfig">
+        <div><div class="kl">AC</div><div class="k24">{{ k.ac|fmt(1) }}</div></div>
+        <div><div class="kl">PL</div><div class="k24 pl">{{ k.pl|fmt(1) }}</div></div>
+        <div><div class="kl">ΔPL</div><div class="k24">{{ k.d|signed(1) }}</div></div>
+        <div><div class="kl">ΔPL %</div><div class="k24">{{ k.pct|signed(0) }} %</div></div>
+        <div class="vbar" aria-hidden="true"><i class="{{ 'good' if k.fav else 'bad' }}" style="width:{{ [100, k.pct|abs|round(0)]|min }}%"></i></div>
+      </div>
+      <div class="sent">{{ k.below }} of {{ k.pairs }} pairs are below {{ k.pl|fmt(0) }} weeks this month. {{ f.sentence }} <span class="fnr">[{{ f.note }}]</span></div>
+      <div class="ctitle">Stock cover, lowest escalated pair first, weeks · AC ■ PL □ · {{ f.series[0].month[:7] }} to {{ f.series[-1].month[:7] }}</div>
+      {{ columns(f.series, k.pl, v.role|replace(' ','-')) }}
+      <div class="ctx">ΔPL per month · red unfavourable, green favourable · hatched = a forecast month in the data pack</div>
+      <div class="zlabel sub"><span>CAUSE · 30 S</span><span>BY PAIR · VS LINE {{ k.pl|fmt(1) }}</span></div>
+      <table class="bypair">{% for r in v.all_rows if v.is_receiver is false or r.escalated %}
+        <tr><td>{{ r.market_name }}</td><td class="num"><b>{{ r.latest|fmt(1) }}</b></td><td class="num ctxc">{{ k.pl|fmt(1) }}</td><td>{{ pct_lollipop(r.dpl_pct, r.dpl >= 0 if r.dpl is not none else none) }}</td><td class="num">{{ r.dpl_pct|signed(0) }} %</td></tr>{% endfor %}</table>
+      {% else %}<p class="lead">Nothing has been passed to you. Nothing is below the line two months in a row.</p>{% endif %}
+    </div>
+    <div class="zcol zc">
+      <div class="zc-in {{ 'frame' if v.is_receiver and v.handovers }}">
+        <div class="zlabel"><span>C · ACT · 300 S</span><span>HO = HANDOVER RECORD</span></div>
+        <div class="counts">{% if v.is_receiver %}<span class="big14">Waiting on me: {{ v.counters.on_me|length }}</span><span>I am waiting on others: {{ v.counters.on_others|length }}</span>
+          {% else %}<span class="big14">I am waiting on others: {{ v.counters.on_others|length }}</span><span>Waiting on me: {{ v.counters.on_me|length }}</span>{% endif %}</div>
+        {% for h in v.handovers %}
+        <div class="hrow {{ h.state }}" data-state="{{ h.state }}">
+          <div class="hmain"><span class="hid">{{ h.handover_id }}</span>
+            <span class="hstate"><span class="chip chip-{{ h.state }}" data-chip="{{ h.state }}"><span class="shape" aria-hidden="true">{{ chips[h.state] }}</span> {{ h.state }}</span>
+              {% if h.overdue %}<span class="badge bad">OVERDUE</span>{% endif %}<span class="due">{{ due_text(h) }}</span></span>
+            <span class="htext">{% if v.role==h.to_role %}← from {{ h.from_role }}{% else %}→ {{ h.to_role }}{% endif %} · pair <span class="hid">{{ h.pair }}</span><br>asked: {{ h.requested_action }}</span>
+          </div>
+          {% for t in h.transitions if t.to_state != 'open' %}
+            <div class="took">{% if t.to_state=='acknowledged' %}Seen and taken over by {{ t.by }}, {{ t.at|hhmm }}{% else %}Closed by {{ t.by }}, {{ t.at|hhmm }}: {{ t.reason }}{% endif %}</div>{% endfor %}
+          <div class="hact">
+          {% if h.state=='open' %}
+            {% if v.role==h.to_role %}<button class="go big" onclick="act('/handover/{{ h.handover_id }}/ack',{actor:'{{ v.role }}'},refreshStage)">Acknowledge</button><span class="ctx">means: seen and taken over. Not done.</span>
+            {% else %}<span class="ctx">not available to you: only {{ h.to_role }} can acknowledge</span>{% endif %}
+          {% endif %}
+          {% if h.state!='closed' %}<button class="ghost" onclick="var r=prompt('Why can this be closed?');if(r)act('/handover/{{ h.handover_id }}/close',{actor:'{{ v.role }}',reason:r},refreshStage)">Close with reason</button>{% if h.state=='acknowledged' %}<span class="ctx">closing needs a reason</span>{% endif %}{% endif %}
+          </div>
+        </div>
+        {% else %}<div class="ctx">No handovers.</div>{% endfor %}
+      </div>
+      <div class="zlabel"><span>D · NEXT TO YOU</span><span>▮ IN FOCUS</span></div>
+      <div class="dcards">
+        <div class="dcard {{ 'infocus' if v.before and v.before[0].focus }}"><b>◂ before you:</b>{% for b in v.before %} {{ b.role }}{% if b.line %}<br>{{ b.line }}{% endif %}{% else %} nobody named in the contract{% endfor %}</div>
+        <div class="dcard {{ 'infocus' if v.after and v.after[0].focus }}"><b>after you: ▸</b>{% for b in v.after %} {{ b.role }}{% if b.line %}<br>{{ b.line }}{% endif %}{% else %} nobody named in the contract{% endfor %}</div>
+      </div>
+    </div>
+  </div>
+  <div class="zb">
+    <div class="zlabel"><span>B · NEXT TO THE LEAD NUMBER · ΔPY % (PREVIOUS MONTH)</span><span>AC · PY</span></div>
+    {% if v.focus %}<table class="nbr">{% for n in v.neighbours %}
+      <tr><td>{{ n.plain }}</td><td class="num"><b>{{ n.latest|fmt(1 if n.unit!='units' else 0) }}</b> <span class="ctxc">{{ n.unit }}</span><sup class="fn">[{{ n.note }}]</sup></td>
+      {% if n.series %}<td class="num ctxc">{{ n.prev|fmt(1 if n.unit!='units' else 0) }}</td><td>{{ pct_lollipop(n.pct) }}</td><td class="num">{{ n.pct|signed(0) if n.pct is not none else '–' }} %</td>
+      {% else %}<td colspan="3" class="ctxc">{{ n.gap }}</td>{% endif %}</tr>{% endfor %}</table>{% endif %}
+  </div>
+  <div class="zf foot">{% for f in v.foots %}<span>[{{ loop.index }}] {{ f }}</span>{{ ' · ' if not loop.last }}{% endfor %} · <a href="/audit">audit log</a></div>
+</section>

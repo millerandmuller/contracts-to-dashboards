@@ -111,7 +111,10 @@ def _stage(request: Request, beat: int = 3):
     if not c:
         return None
     views = [render.view_model(cat, c, v["for_role"]) for v in c["views"]]
-    return dict(c=c, views=views, versions=contracts.versions(CID), yaml=contracts.to_yaml(c), audit=store.audit_rows(8))
+    shown = "after" if any(h["state"] != "open" for h in handovers.all_for(CID)) else "before"
+    last = store.audit_rows(1)
+    return dict(c=c, views=views, versions=contracts.versions(CID), yaml=contracts.to_yaml(c), audit=store.audit_rows(8), shown=shown,
+                last_audit=last[0] if last else None)
 
 
 @app.get("/contract", response_class=HTMLResponse)

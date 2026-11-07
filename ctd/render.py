@@ -1,7 +1,9 @@
 """Render: one dense page per contract, deterministic. Sparklines are server-side SVG. No model involved."""
 from __future__ import annotations
 
+import math
 import os
+from datetime import datetime
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -72,9 +74,63 @@ def lollipop(prev: float | None, cur: float | None, lo: float, hi: float, amber:
     return Markup("".join(svg))
 
 
+MONTH_LETTER = "JFMAMJJASOND"
+
+
+def columns(series: list[dict], pl: float, uid: str = "c", slot: int = 26, up: int = 60, down: int = 34, scale_max: float = 10.0) -> Markup:
+    """AC over PL columns, one slot per month, and the dPL bars under them with a zero line. Boxes only, no chart library.
+    PL is the line set in the contract. Months the data pack marks forecast-like are hatched. Values are never interpolated."""
+    top = max([scale_max] + [p["value"] for p in series if p["value"] is not None])
+    k = up / top
+    kd = (down / 2 - 2) / 6.0  # dPL scale: +-6 weeks fill the lane
+    n = len(series)
+    w, zero = n * slot, up + 4 + down / 2
+    h = up + 4 + down + 14
+    o = [f'<svg class="cols" width="{w}" height="{h}" viewBox="0 0 {w} {h}" role="img" aria-label="Stock cover per month, AC over PL, with the difference to PL below">',
+         f'<defs><pattern id="hatch-{uid}" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="4" height="4" fill="#fff"/><line x1="0" y1="0" x2="0" y2="4" stroke="#1A1A1A" stroke-width="1.6"/></pattern></defs>']
+    for i, p in enumerate(series):
+        x = i * slot
+        base = up
+        o.append(f'<rect class="pl" x="{x + 3}" y="{base - pl * k:.1f}" width="{slot - 6}" height="{pl * k:.1f}"/>')
+        v = p["value"]
+        if v is not None:
+            fc = p["kind"] == "forecast_like"
+            o.append(f'<rect class="ac{" fc" if fc else ""}" data-month="{p["month"]}" data-ac="{v}" data-pl="{pl}" x="{x + 7}" y="{base - v * k:.1f}" width="{slot - 14}" height="{v * k:.1f}"'
+                     + (f' fill="url(#hatch-{uid})"' if fc else "") + "/>")
+            d = max(-6.0, min(6.0, v - pl))
+            hh = abs(d) * kd
+            y = zero - hh if d >= 0 else zero
+            o.append(f'<rect class="dv {"good" if v >= pl else "bad"}" data-month="{p["month"]}" data-dpl="{v - pl:.2f}" x="{x + 8}" y="{y:.1f}" width="{slot - 16}" height="{max(hh, 0.6):.1f}"/>')
+        else:
+            o.append(f'<text class="gap" x="{x + slot / 2}" y="{base - 4}" text-anchor="middle">–</text>')
+        o.append(f'<text class="mo" x="{x + slot / 2}" y="{h - 2}" text-anchor="middle">{MONTH_LETTER[int(p["month"][5:7]) - 1]}</text>')
+    o.append(f'<line class="zero" x1="0" x2="{w}" y1="{zero}" y2="{zero}"/></svg>')
+    return Markup("".join(o))
+
+
+def pct_lollipop(pct: float | None, fav: bool | None = None, w: int = 100, h: int = 16, span: float = 50.0) -> Markup:
+    """dPL % on a 100 px track, zero in the middle, dot at the value. Colour says good or bad, never the sign; no verdict means ink."""
+    if pct is None:
+        return Markup(f'<svg class="pl-lolli" width="{w}" height="{h}" role="img" aria-label="no value"><text x="2" y="{h - 4}" class="gap">no value</text></svg>')
+    mid = w / 2
+    x = mid + max(-span, min(span, pct)) * (mid - 3) / span
+    cls = "neutral" if fav is None else ("good" if fav else "bad")
+    return Markup(f'<svg class="pl-lolli {cls}" width="{w}" height="{h}" role="img" aria-label="{pct:+.0f} percent">'
+                  f'<line class="trk" x1="2" x2="{w - 2}" y1="{h / 2}" y2="{h / 2}"/><line class="z" x1="{mid}" x2="{mid}" y1="2" y2="{h - 2}"/>'
+                  f'<line class="stem" x1="{mid}" x2="{x:.1f}" y1="{h / 2}" y2="{h / 2}"/><circle class="dot" cx="{x:.1f}" cy="{h / 2}" r="3.4"/></svg>')
+
+
+def due_text(h: dict) -> str:
+    """Time left in the response window, computed from the record. Overdue is a word, never a colour change."""
+    if h["state"] == "closed":
+        return ""
+    left = h["response_window_hours"] - (datetime.now() - datetime.fromisoformat(h["created_at"])).total_seconds() / 3600
+    return f"due in {max(0, math.ceil(left))} h" if left >= 0 else f"overdue {max(1, math.ceil(-left))} h"
+
+
 def view_template() -> str:
-    """CTD_VIEW=v1 draws the earlier layout (plan B). Read per request so a switch needs no restart."""
-    return "_view.html" if os.environ.get("CTD_VIEW", "v2") == "v1" else "_view_v2.html"
+    """CTD_VIEW=v1 or v2 draws an earlier layout (plan B); the default is v3. Read per request so a switch needs no restart."""
+    return {"v1": "_view.html", "v2": "_view_v2.html"}.get(os.environ.get("CTD_VIEW", "v3"), "_view_v3.html")
 
 
 def change(prev: float | None, cur: float | None) -> dict | None:
@@ -88,10 +144,14 @@ def change(prev: float | None, cur: float | None) -> dict | None:
 
 env.globals["sparkline"] = sparkline
 env.globals["lollipop"] = lollipop
+env.globals["columns"] = columns
+env.globals["pct_lollipop"] = pct_lollipop
+env.globals["due_text"] = due_text
 env.globals["view_template"] = view_template
 env.globals["rule_version"] = RULE_VERSION
 env.globals["manual_edits"] = lambda: store.audit_count("view_edited")
 env.filters["fmt"] = lambda v, d=1: "–" if v is None else (f"{v:,.{d}f}" if isinstance(v, float) else f"{v:,}")
+env.filters["signed"] = lambda v, d=0: ("−" if v < 0 else "+" if v > 0 else "±") + f"{abs(v):.{d}f}"
 env.filters["hhmm"] = lambda s: s[11:16] if s else ""
 
 
@@ -147,7 +207,36 @@ def view_model(cat: Catalog, c: dict, role: str) -> dict:
                   "rule": f"v{RULE_VERSION}", "manual": "no manual edits" if manual == 0 else f"{manual} manual edits"}
     question = (c["decision"].rstrip(".?") + ", and who takes it over?") if role == c["role"] else "What has been handed to me, and what do I do with it?"
     focus_rule = next((v["focus_rule"] for v in c["views"] if v["for_role"] == role), "")
-    return {"role": role, "c": c, "lead_name": lname, "lead_plain": KPI_SOURCE[lname]["plain"], "thr": thr, "rows": mine,
+    pl = thr["amber"]
+    for n in nb:
+        vals = [p["value"] for p in n["series"]]
+        n["prev"] = vals[-2] if len(vals) > 1 else None
+        n["pct"] = ((n["latest"] - n["prev"]) / n["prev"] * 100) if n["prev"] and n["latest"] is not None else None
+    for r in rows:
+        r["dpl"] = r["latest"] - pl if r["latest"] is not None else None
+        r["dpl_pct"] = r["dpl"] / pl * 100 if r["dpl"] is not None else None
+    for r in mine:
+        r["dpl"], r["dpl_pct"] = next((x["dpl"], x["dpl_pct"]) for x in rows if x["pair"] == r["pair"])
+    kpi = None
+    if focus:
+        kpi = {"ac": focus["latest"], "pl": pl, "d": focus["dpl"], "pct": focus["dpl_pct"], "fav": focus["dpl"] >= 0 if focus["dpl"] is not None else None,
+               "below": sum(1 for r in rows if r["latest"] is not None and r["latest"] < pl), "pairs": len(rows),
+               "months": f"{focus['series'][0]['month'][:4]}", "unit": thr["unit"]}
+    def_note = note(f"{lname} {c['lead_kpi']['kpi_id']} · Product_Market_Monthly: {focus['pair']}/{focus['month']}") if focus else 0
+    gloss = lambda r: (f"{r} (decides {onto[r]['example_decision']})" if r in onto and onto[r].get("source") == "pack" else r)  # noqa: E731
+    if role == c["escalation_to"]:
+        before = [{"role": c["role"], "line": (f"lowest escalated pair {focus['market_name']} {focus['latest']:.1f} wk · ΔPL {focus['dpl_pct']:+.0f} %" if focus else ""), "focus": True}]
+        after = []
+    else:
+        before = [{"role": gloss(r), "line": "", "focus": False} for r in c.get("upstream_roles", [])]
+        after = []
+        for r in c["downstream_roles"]:
+            open_h = [h for h in hs if h["to_role"] == r and h["state"] != "closed"]
+            line = f"{open_h[0]['handover_id']} {open_h[0]['state']}" if open_h else "nothing handed over"
+            if open_h and open_h[0]["state"] == "acknowledged":
+                line += " · taken over " + next(t["at"][11:16] for t in open_h[0]["transitions"] if t["to_state"] == "acknowledged")
+            after.append({"role": gloss(r), "line": line, "focus": bool(open_h)})
+    return {"kpi": kpi, "pl": pl, "def_note": def_note, "before": before, "after": after, "role": role, "c": c, "lead_name": lname, "lead_plain": KPI_SOURCE[lname]["plain"], "thr": thr, "rows": mine,
             "all_rows": rows, "focus": focus, "neighbours": nb, "foots": foots, "counters": ctr, "handovers": hs,
             "side_roles": side_roles, "focus_rule": focus_rule, "is_receiver": role == c["escalation_to"],
             "action": c["permitted_action"], "decision": c["decision"], "onto": onto[role],

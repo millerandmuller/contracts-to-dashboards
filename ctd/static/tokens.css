@@ -51,3 +51,59 @@ th{font-size:11px}
 footer{font-size:11px}
 .toast{background:var(--navy);border-radius:2px}
 @media print{nav.side{display:none}body{display:block}}
+/* views v3: two cards, six zones, IBCS notation */
+.strip{display:flex;justify-content:space-between;gap:16px;font-size:12px;color:var(--ctx);margin:0 0 8px}
+.strip b{color:var(--ink)}
+.cards{gap:14px;align-items:start}
+.card{border:1px solid var(--navy);background:#fff;min-width:0}
+.band{background:var(--tint);padding:7px 12px 6px;border-bottom:1px solid var(--line)}
+.bandtop{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+h2.role{margin:0;font-size:16px;font-weight:600;color:var(--navy)}
+.focusline{font-size:11px;color:var(--ctx)}
+.band .trail{border:0;padding:3px 0 0;margin:0;font-size:12px;color:var(--ink);line-height:1.3}
+.zones{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.zcol{padding:8px 12px;min-width:0}
+.za{border-right:1px solid var(--line)}
+.zlabel{white-space:nowrap;display:flex;justify-content:space-between;gap:6px;font-size:10px;letter-spacing:.05em;color:var(--ctx);margin-bottom:4px}
+.zlabel.sub{margin-top:10px;border-top:1px solid var(--line);padding-top:6px}
+.ztitle{font-weight:600;font-size:13px}
+.kfig{display:flex;gap:10px;align-items:flex-end;margin:2px 0 4px}
+.kl{font-size:10px;color:var(--ctx)}
+.k24{white-space:nowrap;font-size:24px;font-weight:600;line-height:1.1}
+.k24.pl{color:var(--ctx)}
+.vbar{width:60px;height:8px;position:relative;margin-bottom:6px;border-left:1px solid var(--ink)}
+.vbar i{display:block;height:100%}
+.vbar i.bad,.dv.bad{background:var(--bad);fill:var(--bad)}.vbar i.good,.dv.good{background:var(--good);fill:var(--good)}
+.sent{font-size:12.5px;margin:2px 0 6px}.fnr{font-family:var(--mono);font-size:11px;color:var(--ctx)}
+.ctitle{font-size:10.5px;color:var(--ctx);margin-bottom:2px}
+svg.cols{display:block;max-width:100%}
+.cols .pl{fill:#fff;stroke:var(--ink);stroke-width:1}.cols .ac{fill:var(--ink)}.cols .ac.fc{stroke:var(--ink);stroke-width:1}
+.cols .zero{stroke:var(--ink);stroke-width:1}.cols text{font:400 9px var(--sans);fill:var(--ctx)}.cols .gap{font-size:11px}
+.ctx,.ctxc{color:var(--ctx);font-size:11px}.ctxc{font-size:inherit}
+table.bypair,table.nbr{font-size:12px}
+table.bypair td,table.nbr td{padding:3px 4px;border-bottom:1px solid var(--line)}
+.pl-lolli .trk{stroke:var(--line);stroke-width:1}.pl-lolli .z{stroke:var(--ink);stroke-width:1}
+.pl-lolli .stem{stroke:var(--ink);stroke-width:1.2}.pl-lolli .dot{fill:var(--ink)}
+.pl-lolli.bad .stem{stroke:var(--bad)}.pl-lolli.bad .dot{fill:var(--bad)}.pl-lolli.good .stem{stroke:var(--good)}.pl-lolli.good .dot{fill:var(--good)}
+.zc-in{padding:6px 8px;margin:-6px -8px 8px}
+.zc-in.frame{border:2px solid var(--blue)}
+.counts{display:flex;gap:14px;align-items:baseline;margin-bottom:6px}.big14{font-size:14px;font-weight:600}
+.hrow{border-top:1px solid var(--line);padding:6px 0}
+.hmain{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;align-items:center}
+.htext{grid-column:1/-1}
+.hid{font-family:var(--mono);font-size:11px}
+.htext{font-size:12.5px}
+.hstate{display:flex;gap:6px;align-items:center;font-size:12px;justify-self:end}
+.due{color:var(--ctx);font-size:11px}
+.took{font-weight:600;font-size:13px;margin:4px 0 0}
+.hact{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.hact button{min-height:44px}.hact button.ghost{min-height:32px;font-size:12px;padding:0 10px}
+.dcards{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dcard{border:1px solid var(--line);padding:6px 8px;font-size:12px}
+.dcard.infocus{border-left:4px solid var(--navy)}
+.zb{border-top:1px solid var(--ink);padding:8px 12px}
+.zf{padding:6px 12px 8px;margin:0;border-top:1px solid var(--line);font-family:var(--mono);font-size:10.5px;color:var(--ctx)}
+.closer{display:flex;justify-content:space-between;gap:24px;border-top:1px solid var(--navy);margin-top:10px;padding-top:6px;font-size:11px;color:var(--ctx)}
+.lastaudit{color:var(--ink);font-size:12px}
+.legend{max-width:60ch}
+@media(max-width:1000px){.cards,.zones{grid-template-columns:1fr}}

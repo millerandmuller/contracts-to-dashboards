@@ -213,7 +213,7 @@ def test_handover_comes_before_the_pairs_in_the_view(client):
     client.post("/contract/create", data=ANS)
     page = client.get("/contract").text
     first = page.index("<section")
-    assert page.index("Handovers", first) < page.index("shown first:", first)
+    assert page.index("C · ACT · 300 S", first) < page.index("B · NEXT TO THE LEAD NUMBER", first)
 
 
 @pytest.mark.parametrize("q2", ["Stock below 4.", "Stock under 3.5.", "Stock below 4 weeks."])
