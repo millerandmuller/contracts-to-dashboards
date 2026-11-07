@@ -8,6 +8,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import builder, contracts, gateway, handovers, interview, it, pbip, preserve, reader, refuse, render, store
+from . import shift as shiftdata
 from .catalog import get_catalog
 
 ROOT = Path(__file__).resolve().parent
@@ -305,6 +306,24 @@ def shift(request: Request, role: str = "Shift Team Lead", step: int = 0):
     text = {"text": base, "cached": True, "why": "shown first, model wording swaps in if it answers within 2 s"}
     roles = [r["role"] for r in interview.ontology()]
     return html("shift.html", request, 5, g=g, text=text, preview=refuse.handover_preview(role), roles=roles, role=role, live=gateway.live())
+
+
+@app.post("/shift/curated/create")
+def shift_curated_create():
+    shiftdata.create()
+    return RedirectResponse("/shift/curated", status_code=303)
+
+
+@app.get("/shift/curated", response_class=HTMLResponse)
+def shift_curated(request: Request):
+    """The same contract form on curated shift data. The refusal for the pack stays the first sentence."""
+    c = shiftdata.latest()
+    if not c:
+        return RedirectResponse("/shift", status_code=303)
+    views = [shiftdata.view_model(c, v["for_role"]) for v in c["views"]]
+    shown = "after" if any(h["state"] != "open" for h in handovers.all_for(shiftdata.CID)) else "before"
+    last = [a for a in store.audit_rows(20) if a["action"] != "refusal_shown"][:1]
+    return html("shift_curated.html", request, 5, c=c, views=views, shown=shown, last_audit=last[0] if last else None, sd=shiftdata)
 
 
 # ---- beat 6: export -------------------------------------------------------------------------------

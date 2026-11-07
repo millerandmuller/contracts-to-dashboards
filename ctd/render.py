@@ -77,12 +77,13 @@ def lollipop(prev: float | None, cur: float | None, lo: float, hi: float, amber:
 MONTH_LETTER = "JFMAMJJASOND"
 
 
-def columns(series: list[dict], pl: float, uid: str = "c", slot: int = 26, up: int = 60, down: int = 34, scale_max: float = 10.0) -> Markup:
+def columns(series: list[dict], pl: float, uid: str = "c", slot: int = 26, up: int = 60, down: int = 34, scale_max: float = 10.0,
+            bad_above: bool = False, dspan: float = 6.0) -> Markup:
     """AC over PL columns, one slot per month, and the dPL bars under them with a zero line. Boxes only, no chart library.
     PL is the line set in the contract. Months the data pack marks forecast-like are hatched. Values are never interpolated."""
     top = max([scale_max, pl] + [p["value"] for p in series if p["value"] is not None])
     k = up / top
-    kd = (down / 2 - 2) / 6.0  # dPL scale: +-6 weeks fill the lane
+    kd = (down / 2 - 2) / dspan  # dPL scale: +-dspan units fill the lane
     n = len(series)
     w, zero = n * slot, up + 4 + down / 2
     h = up + 4 + down + 14
@@ -95,15 +96,18 @@ def columns(series: list[dict], pl: float, uid: str = "c", slot: int = 26, up: i
         v = p["value"]
         if v is not None:
             fc = p["kind"] == "forecast_like"
-            o.append(f'<rect class="ac{" fc" if fc else ""}" data-month="{p["month"]}" data-ac="{v}" data-pl="{pl}" x="{x + 7}" y="{base - v * k:.1f}" width="{slot - 14}" height="{v * k:.1f}"'
+            key = p.get("month") or p.get("id")
+            o.append(f'<rect class="ac{" fc" if fc else ""}" data-month="{key}" data-ac="{v}" data-pl="{pl}" x="{x + 7}" y="{base - v * k:.1f}" width="{slot - 14}" height="{v * k:.1f}"'
                      + (f' fill="url(#hatch-{uid})"' if fc else "") + "/>")
-            d = max(-6.0, min(6.0, v - pl))
+            d = max(-dspan, min(dspan, v - pl))
+            good = v <= pl if bad_above else v >= pl
             hh = abs(d) * kd
             y = zero - hh if d >= 0 else zero
-            o.append(f'<rect class="dv {"good" if v >= pl else "bad"}" data-month="{p["month"]}" data-dpl="{v - pl:.2f}" x="{x + 8}" y="{y:.1f}" width="{slot - 16}" height="{max(hh, 0.6):.1f}"/>')
+            o.append(f'<rect class="dv {"good" if good else "bad"}" data-month="{key}" data-dpl="{v - pl:.2f}" x="{x + 8}" y="{y:.1f}" width="{slot - 16}" height="{max(hh, 0.6):.1f}"/>')
         else:
             o.append(f'<text class="gap" x="{x + slot / 2}" y="{base - 4}" text-anchor="middle">–</text>')
-        o.append(f'<text class="mo" x="{x + slot / 2}" y="{h - 2}" text-anchor="middle">{MONTH_LETTER[int(p["month"][5:7]) - 1]}</text>')
+        letter = p["letter"] if "letter" in p else MONTH_LETTER[int(p["month"][5:7]) - 1]
+        o.append(f'<text class="mo" x="{x + slot / 2}" y="{h - 2}" text-anchor="middle">{letter}</text>')
     o.append(f'<line class="zero" x1="0" x2="{w}" y1="{zero}" y2="{zero}"/></svg>')
     return Markup("".join(o))
 

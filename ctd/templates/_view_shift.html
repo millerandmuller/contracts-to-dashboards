@@ -1,0 +1,64 @@
+{% set chips = {'open': '○', 'acknowledged': '◐', 'closed': '●'} %}
+{% set k = v.kpi %}
+<section class="card" aria-label="View for {{ v.role }}">
+  <div class="band">
+    <div class="bandtop"><h2 class="role">{{ v.role }}</h2><span class="badge curated">{{ v.badge }}</span></div>
+    <div class="trail" data-trail>rendered from {{ c.contract_id }} v{{ c.version }} (curated) · {{ v.question }} · {{ c.views|length }} views, kept apart from the pack's catalog</div>
+  </div>
+  <div class="zones">
+    <div class="zcol za">
+      <div class="zlabel"><span>A · STATUS · 3 S</span><span>MINUTES · {{ k.line|upper }}</span></div>
+      <div class="ztitle">Downtime, {{ k.line }}, {{ k.when }}</div>
+      <div class="kfig">
+        <div><div class="kl">AC</div><div class="k24">{{ k.ac|fmt(0) }}</div></div>
+        <div><div class="kl">PL</div><div class="k24 pl">{{ k.pl|fmt(0) }}</div></div>
+        <div><div class="kl">ΔPL</div><div class="k24">{{ k.d|signed(0) }}</div></div>
+        <div><div class="kl">ΔPL %</div><div class="k24">{{ k.pct|signed(0) }} %</div></div>
+        <div class="vbar" aria-hidden="true"><i class="{{ 'good' if k.fav else 'bad' }}" style="width:{{ [100, k.pct|abs|round(0)]|min }}%"></i></div>
+      </div>
+      <div class="sent">{{ k.line }} stood still {{ k.ac|fmt(0) }} minutes ({{ k.reason }}). The line is {{ k.pl|fmt(0) }} minutes per shift, from answer 2. Previous shift: {{ k.prev|fmt(0) }} minutes. <span class="fnr">[1]</span></div>
+      <div class="ctitle">Downtime per shift, {{ k.line }}, minutes · AC ■ PL □ · last {{ v.series|length }} shifts · E early, L late, N night</div>
+      {{ columns(v.series, k.pl, 'shift-' ~ (1 if v.is_receiver else 0), scale_max=60, bad_above=True, dspan=40) }}
+      <div class="ctx">ΔPL per shift · red unfavourable (above the line), green favourable</div>
+      <div class="zlabel sub"><span>CAUSE · 30 S</span><span>BY LINE · VS LINE {{ k.pl|fmt(0) }} MIN</span></div>
+      <table class="bypair">{% for r in v.lines %}<tr><td>{{ r.line }}</td><td class="num"><b>{{ r.down }}</b></td><td class="num ctxc">{{ k.pl|fmt(0) }}</td><td class="num">{{ r.d|signed(0) }}</td><td class="ctxc">{{ r.reason }}</td><td class="mono ctxc">{{ r.id }}</td></tr>{% endfor %}</table>
+    </div>
+    <div class="zcol zc">
+      <div class="zc-in {{ 'frame' if v.is_receiver and v.counters.on_me }}">
+        <div class="zlabel"><span>C · ACT · 300 S</span><span>HO = HANDOVER RECORD</span></div>
+        <div class="counts">{% if v.is_receiver %}<span class="big14">Waiting on me: {{ v.counters.on_me|length }}</span><span>I am waiting on others: {{ v.counters.on_others|length }}</span>
+          {% else %}<span class="big14">I am waiting on others: {{ v.counters.on_others|length }}</span><span>Waiting on me: {{ v.counters.on_me|length }}</span>{% endif %}</div>
+        {% for h in v.handovers %}
+        <div class="hrow {{ h.state }}" data-state="{{ h.state }}">
+          <div class="hmain"><span class="hid">{{ h.handover_id }}</span>
+            <span class="hstate"><span class="chip chip-{{ h.state }}" data-chip="{{ h.state }}"><span class="shape" aria-hidden="true">{{ chips[h.state] }}</span> {{ h.state }}</span></span>
+            <span class="htext">{% if v.role==h.to_role %}← from {{ h.from_role }}{% else %}→ {{ h.to_role }}{% endif %} · shift change after the {{ h.pair }}</span>
+          </div>
+          <ul class="points">{% for p in h.points %}<li>{{ p.what }} <span class="ctxc">· if stuck: {{ p.to }} · <span class="mono">{{ p.cite }}</span></span></li>{% endfor %}</ul>
+          {% for t in h.transitions if t.to_state != 'open' %}
+            <div class="took">{% if t.to_state=='acknowledged' %}Seen and taken over by {{ t.by }}, {{ t.at|hhmm }}{% else %}Closed by {{ t.by }}, {{ t.at|hhmm }}: {{ t.reason }}{% endif %}</div>{% endfor %}
+          <div class="hact">
+          {% if h.state=='open' %}
+            {% if v.role==h.to_role %}<button class="go big" onclick="act('/handover/{{ h.handover_id }}/ack',{actor:'{{ v.role }}',note:'taken over at shift start'},()=>location.reload())">Acknowledge</button><span class="ctx">means: seen and taken over at shift start. Not done.</span>
+            {% else %}<span class="ctx">not available to you: only the {{ h.to_role }} can acknowledge</span>{% endif %}
+          {% endif %}
+          </div>
+          <div class="ctx">record of truth: {{ h.system_of_record }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="zlabel"><span>D · NEXT TO YOU</span><span>▮ IN FOCUS</span></div>
+      <div class="dcards">
+        <div class="dcard {{ 'infocus' if v.is_receiver }}"><b>◂ before you:</b> {% for b in v.before %}{{ b }}{% else %}{{ c.upstream_roles|join(', ') }}{% endfor %}</div>
+        <div class="dcard {{ 'infocus' if not v.is_receiver }}"><b>after you: ▸</b> {{ v.after|join(', ') }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="zb">
+    <div class="zlabel"><span>B · NEXT TO THE LEAD NUMBER · SAME SHIFT, BOTH LINES</span><span>AC · PL</span></div>
+    <table class="nbr">{% for n in v.neighbours %}
+      <tr><td>{{ n.line }}</td><td>output <b>{{ n.produced|fmt }}</b> <span class="ctxc">of {{ n.planned|fmt }} planned, {{ n.out_pct|fmt(0) }} %</span></td>
+        <td>material: <b>{{ n.material }}</b></td><td>waiting for QC release: <b>{{ n.pending }}</b></td><td class="mono ctxc">{{ n.id }}</td></tr>{% endfor %}</table>
+  </div>
+  <div class="zf foot"><span>[1] data/curated/shifts.csv {{ k.id }}, previous {{ k.prev_id }} · curated, not from the pack, not from any plant</span> · <a href="/audit">audit log</a></div>
+</section>

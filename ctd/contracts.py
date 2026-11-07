@@ -108,8 +108,8 @@ def counters() -> dict:
     """Views are configuration over a contract. They never count as assets."""
     with store.conn() as db:
         ids = [r[0] for r in db.execute("SELECT DISTINCT contract_id FROM contracts")]
-    views = sum(len(latest(i)["views"]) for i in ids)
-    return {"assets": len(ids), "views": views}
+    bodies = [b for b in (latest(i) for i in ids) if not b.get("curated")]  # a curated contract on curated data is never an asset of the pack's catalog
+    return {"assets": len(bodies), "views": sum(len(b["views"]) for b in bodies)}
 
 
 def to_yaml(c: dict) -> str:

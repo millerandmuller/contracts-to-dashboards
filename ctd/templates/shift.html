@@ -23,5 +23,10 @@ fetch('/shift.json?role={{ role|urlencode }}').then(r=>r.json()).then(j=>{if(j.c
 <h3>How the handover would look</h3>
 <div class="ho open"><div class="row"><span class="state">open</span> <b>{{ preview.from_role }} → {{ preview.to_role }}</b></div>
 <div>Asked: <i>{{ preview.requested_action }}</i></div><div class="cite">No numbers. {{ preview.note }}</div></div>
+{% if role == 'Shift Team Lead' %}
+<h3>Once shift data exists</h3>
+<div class="actbar"><form method="post" action="/shift/curated/create"><button class="ghost">Show the same contract on curated shift data</button></form>
+  <span class="badge curated">curated shift data, not from the pack, not from any plant</span></div>
+{% endif %}
 {% endif %}
 {% endblock %}

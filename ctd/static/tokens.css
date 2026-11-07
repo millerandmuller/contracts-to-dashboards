@@ -174,3 +174,10 @@ table.cases tr.why td{white-space:normal;font-size:12.5px;border-bottom:2px soli
 table.models td{white-space:nowrap}table.models td:last-child{white-space:normal}
 .chip.refresh-failed,.chip.refresh-warning,.chip.refresh-healthy{color:var(--ink)}
 .lin{font-size:12px;padding:3px 0;overflow-wrap:anywhere}
+/* curated shift data: the badge is on every view and every frame */
+.badge.curated{border-color:var(--ink);color:var(--ink);text-transform:none;letter-spacing:0;font-size:11px}
+.curbanner{border:2px solid var(--ink);padding:5px 12px;font-weight:600;font-size:13px;display:inline-block;margin-bottom:6px}
+p.first{font-size:14px;margin:4px 0 8px}
+.qa3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px 0;margin-bottom:8px;font-size:12.5px}
+ul.points{margin:4px 0 0 1rem;padding:0;font-size:12.5px}
+ul.points li{margin:2px 0}
