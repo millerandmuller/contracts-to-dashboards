@@ -49,7 +49,7 @@ def _num(v) -> float | None:
             s = str(v).strip().lower()[:40]
             if s in WORDS:
                 return float(WORDS[s])
-            m = re.match(r"^\d+(?:\.\d+)?(?![\d.e,])", s)
+            m = re.match(r"^\d+(?:\.\d+)?(?!\d|\.\d|e\d|,\d)", s)
             f = float(m.group(0)) if m else None
     except (OverflowError, ValueError):
         return None

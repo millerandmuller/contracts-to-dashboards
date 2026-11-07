@@ -77,7 +77,7 @@ def interview_submit(request: Request, q1: str = Form(""), q2: str = Form(""), q
 
 @app.post("/interview/reading", response_class=HTMLResponse)
 def interview_reading(request: Request, q1: str = Form(""), q2: str = Form(""), q3: str = Form("")):
-    answers = {"q1": q1, "q2": q2, "q3": q3}
+    answers = {"q1": q1[:MAX_ANSWER], "q2": q2[:MAX_ANSWER], "q3": q3[:MAX_ANSWER]}
     try:
         c = builder.propose(get_catalog(), LEAD, answers, get_catalog().analyze(REQUEST))
         errs = contracts.validate(c, get_catalog())
@@ -173,13 +173,14 @@ def consolidate(request: Request, p: str = "CONS-1"):
 
 @app.post("/consolidate/{pid}/decide")
 def decide(pid: str, choice: str = Form(...), reason: str = Form(""), by: str = Form(LEAD)):
-    c = contracts.latest(CID)
-    if not c:
-        return JSONResponse({"ok": False, "error": "No contract yet."}, status_code=409)
-    try:
-        out = preserve.decide(get_catalog(), c, pid, choice, by, reason)
-    except (ValueError, KeyError) as e:
-        return JSONResponse({"ok": False, "error": str(e)}, status_code=422)
+    with store.WRITE_LOCK:  # read the contract inside the lock so a parallel new version is not overwritten
+        c = contracts.latest(CID)
+        if not c:
+            return JSONResponse({"ok": False, "error": "No contract yet."}, status_code=409)
+        try:
+            out = preserve.decide(get_catalog(), c, pid, choice, by, reason)
+        except (ValueError, KeyError) as e:
+            return JSONResponse({"ok": False, "error": str(e)}, status_code=422)
     return {"ok": True, "outcome": out["outcome"]}
 
 
@@ -231,7 +232,7 @@ def export_run(request: Request):
         sm = pbip.summary(res)
         card = _closing_card(c, res, again, sm)
         store.audit(c["role"], "pbip_exported", f"{CID} v{c['version']}", f"project folder written, hash {res['sha256'][:12]}")
-    return html("export.html", request, 6, c=c, result=res, sm=sm, card=card)
+        return html("export.html", request, 6, c=c, result=res, sm=sm, card=card)
 
 
 def _closing_card(c: dict, res: dict, again: dict, sm: dict) -> list[dict]:

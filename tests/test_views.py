@@ -214,3 +214,19 @@ def test_handover_comes_before_the_pairs_in_the_view(client):
     page = client.get("/contract").text
     first = page.index("<section")
     assert page.index("Handovers", first) < page.index("shown first:", first)
+
+
+@pytest.mark.parametrize("q2", ["Stock below 4.", "Stock under 3.5.", "Stock below 4 weeks."])
+def test_number_before_a_sentence_end_still_parses(client, q2):
+    assert client.post("/contract/create", data={**ANS, "q2": q2}).status_code == 303
+
+
+def test_decision_and_new_version_do_not_overwrite_each_other(client):
+    from concurrent.futures import ThreadPoolExecutor
+    client.post("/contract/create", data=ANS)
+    with ThreadPoolExecutor(2) as ex:
+        a = ex.submit(client.post, "/contract/v2", data={"reason": "add forecast accuracy"})
+        b = ex.submit(client.post, "/consolidate/CONS-1/decide", data={"choice": "fix_mapping", "reason": "agreed denominator"})
+        a.result(), b.result()
+    c = contracts.latest("CON-SUPPLY-RISK")
+    assert len(c["neighbour_kpis"]) == 3 or contracts.versions("CON-SUPPLY-RISK")[-1] == 2
