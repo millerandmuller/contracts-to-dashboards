@@ -12,7 +12,7 @@ async function act1(url,data,after){
 async function refreshStage(){
   const r=await fetch('/contract?fragment=1');if(!r.ok)return;
   document.getElementById('stage').innerHTML=await r.text();
-  const c=await (await fetch('/counter.json')).json();const el=document.getElementById('counter');if(el)el.innerHTML=`Assets: <b>${c.assets}</b>, Views: <b>${c.views}</b>`}
+  const c=await (await fetch('/counter.json')).json();const el=document.getElementById('counter');if(el)el.innerHTML=`Assets: <b>${c.assets}</b> · Views: <b>${c.views}</b>`}
 
 // Interview: the card is already on the page (cached or empty). If a model may answer, ask once and swap the card when it arrives.
 (function(){const box=document.getElementById('reading');if(!box||box.dataset.live!=='1')return;

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% block kicker %}REQUEST · THREE QUESTIONS{% endblock %}
+{% block question %}Three questions for the {{ role }}{% endblock %}
 {% block body %}
-<h2>Three questions for the {{ role }}</h2>
 <p class="lead">Short questions, in your own words. The examples come from the role list, not from a model.</p>
 {% if existing %}<div class="note">A contract already exists (version {{ existing.version }}). <a href="/contract">Open it</a>.</div>{% endif %}
 <form method="post" action="/interview" id="qform">

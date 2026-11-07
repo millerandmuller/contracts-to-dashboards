@@ -89,6 +89,8 @@ def change(prev: float | None, cur: float | None) -> dict | None:
 env.globals["sparkline"] = sparkline
 env.globals["lollipop"] = lollipop
 env.globals["view_template"] = view_template
+env.globals["rule_version"] = RULE_VERSION
+env.globals["manual_edits"] = lambda: store.audit_count("view_edited")
 env.filters["fmt"] = lambda v, d=1: "–" if v is None else (f"{v:,.{d}f}" if isinstance(v, float) else f"{v:,}")
 env.filters["hhmm"] = lambda s: s[11:16] if s else ""
 

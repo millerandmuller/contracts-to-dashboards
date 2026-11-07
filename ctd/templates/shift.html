@@ -1,6 +1,8 @@
 {% extends "base.html" %}
+{% block kicker %}GOVERNANCE · SHIFT TEAM LEAD REQUEST{% endblock %}
+{% block question %}A different role asks for a view{% endblock %}
 {% block body %}
-<div class="row"><h2 style="margin:0">A different role asks for a view</h2>
+<div class="row">
  <form method="get" action="/shift" class="right row"><select name="role" onchange="this.form.submit()" style="width:auto">{% for r in roles %}<option {{ 'selected' if r==role }}>{{ r }}</option>{% endfor %}</select></form></div>
 <p class="lead">{{ g.ontology.role }} · {{ g.ontology.source }} role · catalog support: <b>{{ g.ontology.catalog_support }}</b></p>
 <h3>Her three questions</h3>

@@ -17,7 +17,7 @@
       <div class="delta">{% if ch %}<b>{{ '▲' if ch.dir=='up' else '▼' if ch.dir=='down' else '■' }} {{ '%+.1f'|format(ch.abs) }} {{ v.thr.unit }}{% if ch.pct is not none %} ({{ '%+.0f'|format(ch.pct) }}%){% endif %}</b> vs last month
         <span class="bar" aria-hidden="true"><i class="{{ ch.dir }}" style="width:{{ ch.bar }}%"></i></span>{% else %}<span class="cite">no month before to compare</span>{% endif %}</div>
     </div>
-    <div class="cite">Amber line: {{ v.thr.amber|fmt(0) }} {{ v.thr.unit }}. {{ sparkline(f.series, v.thr.amber, 140, 24) }}{% if f.last_kind=='forecast_like' %}The latest month is a forecast, drawn hollow.{% endif %}</div>
+    <div class="cite">Line set in the contract: {{ v.thr.amber|fmt(0) }} {{ v.thr.unit }}. {{ sparkline(f.series, v.thr.amber, 140, 24) }}{% if f.last_kind=='forecast_like' %}The latest month is a forecast, drawn hollow.{% endif %}</div>
   </div>
   <div>{{ f.sentence }}</div>
   {% else %}

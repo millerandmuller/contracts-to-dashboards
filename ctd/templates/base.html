@@ -1,20 +1,26 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{% block title %}Role contracts{% endblock %}</title>
-<link rel="stylesheet" href="/static/app.css"><script src="/static/app.js" defer></script></head>
+<title>{% block title %}Contracts to Dashboards{% endblock %}</title>
+<link rel="stylesheet" href="/static/tokens.css"><link rel="stylesheet" href="/static/app.css"><script src="/static/app.js" defer></script></head>
 <body>
-<header class="top">
-  <h1>Role contracts that generate dashboards</h1>
-  <nav class="beats">
-    {% for n, label, href in [(1,'1 Request','/'),(2,'2 Questions','/interview'),(3,'3 Contract','/contract'),(4,'4 Consolidate','/consolidate'),(5,'5 Shift lead','/shift'),(6,'6 Export','/export')] %}
-    <a href="{{ href }}" class="{{ 'on' if beat==n }}">{{ label }}</a>{% endfor %}
-    <a href="/audit" class="{{ 'on' if path=='/audit' }}">Audit log</a>
-  </nav>
-  <span class="counter" id="counter" title="Views are configuration over a contract. They never count as assets.">Assets: <b>{{ counters.assets }}</b>, Views: <b>{{ counters.views }}</b></span>
-  <form method="post" action="/reset" style="margin:0"><button class="ghost" title="Start the demo from zero" style="padding:.15rem .5rem;font-size:.8rem">Reset</button></form>
-</header>
-<main>{% block body %}{% endblock %}
-<footer>Data: synthetic data pack from the organizer. Role list, formulas, interview answers and cached texts are curated and marked. Nothing here is a real plant, person or number from a plant.</footer>
+{% set nav = [('REQUEST', [('Inbox','/','/'),('Three questions','/interview','/interview'),('Contract','/contract#contract','')]),
+  ('VIEWS', [('Two roles, one contract','/contract#views','/contract')]),
+  ('GOVERNANCE', [('Consolidation','/consolidate','/consolidate'),('Shift Team Lead request','/shift','/shift'),('Audit log','/audit','/audit'),('Export to Power BI','/export','/export')])] %}
+<nav class="side" aria-label="Chapters">
+  <div class="brand"><b>Contracts to Dashboards</b><span>governed analytics · prototype</span></div>
+  {% for grp, items in nav %}<div class="grp">{{ grp }}</div>
+  {% for label, href, match in items %}<a href="{{ href }}" class="{{ 'on' if match and path==match }}">{{ label }}</a>{% endfor %}{% endfor %}
+  <div class="spacer"></div>
+  <form method="post" action="/reset"><button class="ghost" title="Start the demo from zero">Reset demo</button></form>
+  <div class="rule">rule <span class="mono">v{{ rule_version }}</span> · rendered from contract<br>{{ 'no manual edits' if manual_edits()==0 else manual_edits()|string ~ ' manual edits' }}<br>synthetic data pack</div>
+</nav>
+<main>
+  <div class="pagehead">
+    <div class="titles"><div class="kicker">{% block kicker %}{% endblock %}</div><h1 class="q">{% block question %}{% endblock %}</h1></div>
+    <div class="pagemeta">{% block pagemeta %}{% endblock %}<span class="counter" id="counter" title="Views are configuration over a contract. They never count as assets.">Assets: <b>{{ counters.assets }}</b> · Views: <b>{{ counters.views }}</b></span></div>
+  </div>
+  {% block body %}{% endblock %}
+  <footer>Data: synthetic data pack from the organizer. Role list, formulas, interview answers and cached texts are curated and marked. Nothing here is a real plant, person or number from a plant.</footer>
 </main>
 <div class="toast" id="toast" role="status"></div>
 </body></html>
