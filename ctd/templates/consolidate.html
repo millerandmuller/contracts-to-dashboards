@@ -10,14 +10,14 @@
 
 {% if res.blocked %}
 <div class="blocked"><b>Blocked.</b> After this merge, the {{ res.affected_role }} would read different answers than today.
-{% set hid = res.rows|selectattr('hides_open_handover')|list %}{% if hid %}<br><b>{{ hid[0].market }}</b> turns from <span class="st-amber">amber</span> to <span class="st-ok">green</span>, while a handover for it is still open. The merge would hide it.{% endif %}</div>
+{% set hid = res.rows|selectattr('hides_open_handover')|list %}{% if hid %}<br><b>{{ hid[0].market }}</b> turns from <span class="st-amber">amber</span> to <span class="st-ok">green</span>, while its handover is still {{ hid[0].handover_state }}. The merge would hide it.{% endif %}</div>
 {% else %}
 <div class="passed"><b>Passed.</b> Every pair keeps its answer after the merge.</div>
 {% endif %}
 <table><tr><th>Pair</th><th class="num">Today</th><th class="num">After merge</th><th>Answer today</th><th>Answer after</th><th></th></tr>
 {% for r in res.rows %}<tr class="{{ 'flip' if r.flipped }}"><td>{{ r.market }} <span class="cite">{{ r.pair }}</span></td><td class="num">{{ r.before }}</td><td class="num">{{ r.after }}</td>
 <td class="st-{{ r.status_before }}">{{ r.status_before }}</td><td class="st-{{ r.status_after }}">{{ r.status_after }}</td>
-<td>{% if r.hides_open_handover %}<span class="badge bad">hides an open handover</span>{% elif r.hides_risk %}<span class="badge bad">hides risk</span>{% elif r.flipped %}<span class="badge">changes</span>{% else %}<span class="badge good">same</span>{% endif %}</td></tr>{% endfor %}</table>
+<td>{% if r.hides_open_handover %}<span class="badge bad">hides a live handover</span>{% elif r.hides_risk %}<span class="badge bad">hides risk</span>{% elif r.flipped %}<span class="badge">changes</span>{% else %}<span class="badge good">same</span>{% endif %}</td></tr>{% endfor %}</table>
 
 {% if res.decisions %}
 <h3>Decision</h3>{% for d in res.decisions %}<div class="note"><b>{{ d.choice|replace('_',' ') }}</b> by {{ d.by }} at {{ d.at[11:16] }}: {{ d.reason }}</div>{% endfor %}

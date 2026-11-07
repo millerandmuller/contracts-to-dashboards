@@ -38,7 +38,10 @@ def coverage_weeks(formula: str, units: list[int], weeks_now: float) -> float | 
 
 
 def get_proposal(pid: str) -> dict:
-    return next(p for p in config()["proposals"] if p["id"] == pid)
+    for p in config()["proposals"]:
+        if p["id"] == pid:
+            return p
+    raise KeyError(pid)
 
 
 def run(cat: Catalog, c: dict, proposal_id: str, keep_formula: str | None = None) -> dict:
@@ -46,7 +49,8 @@ def run(cat: Catalog, c: dict, proposal_id: str, keep_formula: str | None = None
     if keep_formula:
         p["keep_formula"] = keep_formula
     thr = c["lead_kpi"]["threshold"]
-    handover_pairs = {h["pair"] for h in __import__("ctd.handovers", fromlist=["x"]).all_for(c["contract_id"]) if h["state"] != "closed"}
+    from . import handovers
+    handover_pairs = {h["pair"]: h["state"] for h in handovers.all_for(c["contract_id"]) if h["state"] != "closed"}
     rows = []
     for m in c["scope"]["markets"]:
         s = cat.series(c["scope"]["product_id"], m, "inventory_weeks_syn")
@@ -61,7 +65,8 @@ def run(cat: Catalog, c: dict, proposal_id: str, keep_formula: str | None = None
         rows.append({"pair": pair, "market": cat.markets.loc[m, "market_name"], "before": round(before, 2), "after": round(after, 2),
                      "status_before": sb, "status_after": sa, "flipped": sb != sa,
                      "hides_risk": RANK[sa] > RANK[sb],
-                     "hides_open_handover": RANK[sa] > RANK[sb] and pair in handover_pairs})
+                     "hides_open_handover": RANK[sa] > RANK[sb] and pair in handover_pairs,
+                     "handover_state": handover_pairs.get(pair)})
     rows.sort(key=lambda r: (not r["hides_open_handover"], not r["hides_risk"], not r["flipped"]))
     flipped = [r for r in rows if r["flipped"]]
     return {
@@ -75,6 +80,8 @@ def run(cat: Catalog, c: dict, proposal_id: str, keep_formula: str | None = None
 def decide(cat: Catalog, c: dict, proposal_id: str, choice: str, by: str, reason: str) -> dict:
     if not reason.strip():
         raise ValueError("A decision needs a reason.")
+    if store.decisions(f"consolidation:{proposal_id}"):
+        raise ValueError("This has been decided already. Reload to see the decision.")
     res = run(cat, c, proposal_id)
     p = res["proposal"]
     if choice == "keep_exception":

@@ -1,6 +1,7 @@
 """Interview: three fixed questions. Wording and examples come from the ontology file, never from the model."""
 from __future__ import annotations
 
+import math
 import re
 from functools import lru_cache
 from pathlib import Path
@@ -61,9 +62,10 @@ def parse_threshold(text: str) -> float | None:
     if v in WORDS:
         return float(WORDS[v])
     try:
-        return float(v)
+        f = float(v)
     except ValueError:
         return None
+    return f if math.isfinite(f) and f > 0 else None
 
 
 def parse_cadence(text: str) -> str:

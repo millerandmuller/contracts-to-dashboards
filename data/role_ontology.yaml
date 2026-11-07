@@ -176,13 +176,13 @@
   example_signal: material missing, machine stopped
   example_action: re-plan the shift, call maintenance
   example_escalation:
-  - Maintenance
+  - Maintenance / Plant Mechanic
   - QA Specialist
   upstream:
   - QC Lab Technician
   - Production Planning
   downstream:
-  - Maintenance
+  - Maintenance / Plant Mechanic
   - QA Specialist
   vocabulary:
   - line

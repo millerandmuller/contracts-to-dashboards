@@ -41,7 +41,7 @@ def home(request: Request):
     a = cat.analyze(REQUEST)
     fx = gateway.fixture("interview_supply_analytics_lead.json")
     facts = "\n".join(f"- {c.text} ({c.cite.text()})" for c in a["claims"])
-    ex = gateway.complete("Explain in 2 or 3 short sentences why a tenth dashboard is the wrong move.", facts, fx["cached"]["explain_cluster"])
+    ex = {"text": fx["cached"]["explain_cluster"], "cached": True, "why": "shown first, model text swaps in if it answers", "live": not gateway.OFFLINE}
     contradictions = [r for r in a["requests"] if False]  # filled by the catalog for requests with conflicting tags; none in this cluster
     return html("home.html", request, 1, a=a, explain=ex, contradictions=contradictions, rules=cat.rules(),
                 existing=contracts.latest(CID))
@@ -107,6 +107,8 @@ def contract_page(request: Request, fragment: int = 0):
 def contract_v2(reason: str = Form("Added forecast accuracy as a neighbour number")):
     cat = get_catalog()
     c = contracts.latest(CID)
+    if not c:
+        return JSONResponse({"ok": False, "error": "No contract yet."}, status_code=409)
     fa = cat.canonical_kpi("Demand Forecast Accuracy")
     if fa in c["neighbour_kpis"]:
         return JSONResponse({"ok": False, "error": "Already in the contract."}, status_code=409)
@@ -124,7 +126,7 @@ def ack(hid: str, actor: str = Form(...), note: str = Form("seen, taking it over
     try:
         handovers.acknowledge(hid, actor, note)
     except handovers.NotAllowed as e:
-        return JSONResponse({"ok": False, "error": str(e)}, status_code=403)
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=404 if str(e).startswith("No handover") else 403)
     return {"ok": True}
 
 
@@ -133,7 +135,7 @@ def close(hid: str, actor: str = Form(...), reason: str = Form("")):
     try:
         handovers.close(hid, actor, reason)
     except handovers.NotAllowed as e:
-        return JSONResponse({"ok": False, "error": str(e)}, status_code=403)
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=404 if str(e).startswith("No handover") else 403)
     return {"ok": True}
 
 
@@ -143,27 +145,46 @@ def consolidate(request: Request, p: str = "CONS-1"):
     c = contracts.latest(CID)
     if not c:
         return RedirectResponse("/interview?prepared=1", status_code=303)
+    if p not in {x["id"] for x in preserve.config()["proposals"]}:
+        p = "CONS-1"
     res = preserve.run(get_catalog(), c, p)
     return html("consolidate.html", request, 4, c=c, res=res, pid=p, proposals=preserve.config()["proposals"], audit=store.audit_rows(6))
 
 
 @app.post("/consolidate/{pid}/decide")
 def decide(pid: str, choice: str = Form(...), reason: str = Form(""), by: str = Form(LEAD)):
+    c = contracts.latest(CID)
+    if not c:
+        return JSONResponse({"ok": False, "error": "No contract yet."}, status_code=409)
     try:
-        out = preserve.decide(get_catalog(), contracts.latest(CID), pid, choice, by, reason)
+        out = preserve.decide(get_catalog(), c, pid, choice, by, reason)
     except (ValueError, KeyError) as e:
         return JSONResponse({"ok": False, "error": str(e)}, status_code=422)
     return {"ok": True, "outcome": out["outcome"]}
 
 
 # ---- beat 5: a role the catalog cannot serve -------------------------------------------------
+@app.get("/explain.json")
+def explain_json():
+    """Model text for the cold open. The page shows the cached text at once and swaps this in if it arrives."""
+    a = get_catalog().analyze(REQUEST)
+    facts = "\n".join(f"- {c.text} ({c.cite.text()})" for c in a["claims"])
+    fx = gateway.fixture("interview_supply_analytics_lead.json")
+    return gateway.complete("Explain in 2 or 3 short sentences why a tenth dashboard is the wrong move.", facts, fx["cached"]["explain_cluster"])
+
+
 @app.get("/shift", response_class=HTMLResponse)
 def shift(request: Request, role: str = "Shift Team Lead", step: int = 0):
     cat = get_catalog()
+    if role not in interview.ontology_by_role():
+        role = "Shift Team Lead"
     g = refuse.gaps_for(cat, role)
     fx = gateway.fixture("interview_supply_analytics_lead.json")
     facts = "\n".join(f"- {m['kind']}: {m['what']}" for m in g["missing"])
-    text = gateway.complete("Say honestly, in 2 short sentences, why nothing is shown for this role.", facts, fx["cached"]["refusal_shift_team_lead"])
+    o = g["ontology"]
+    base = (f"Your decision is about {o['example_decision']}. This catalog cannot show that yet. "
+            "What is missing is listed below. Nothing was built, so nothing can mislead you.")
+    text = gateway.complete("Say honestly, in 2 short sentences, why nothing is shown for this role.", facts, base)
     roles = [r["role"] for r in interview.ontology()]
     return html("shift.html", request, 5, g=g, text=text, preview=refuse.handover_preview(role), roles=roles, role=role)
 

@@ -122,7 +122,7 @@ class Catalog:
         stale = a[a.owner_state != "active"]
         out = {
             "request_text": text,
-            "requests": c[["request_id", "request_date", "product_context", "market_context", "status"]].to_dict("records"),
+            "requests": c[["request_id", "request_date", "product_context", "market_context", "status"]].astype({"request_date": str}).assign(request_date=lambda d: d.request_date.str[:10]).to_dict("records"),
             "needed": cov["needed"],
             "covered_kpis": covered_kpis,
             "uncovered_kpis": [k for k in cov["needed"] if k not in covered_kpis],

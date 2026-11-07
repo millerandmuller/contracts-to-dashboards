@@ -51,7 +51,7 @@ def test_full_flow_keeps_asset_count_at_one(client):
 def test_preservation_test_blocks_denominator_flip_and_logs_human_decision(client):
     client.post("/contract/create", data=ANS)
     page = client.get("/consolidate").text
-    assert "Blocked." in page and "hides an open handover" in page
+    assert "Blocked." in page and "hides a live handover" in page
     assert client.post("/consolidate/CONS-1/decide", data={"choice": "keep_exception", "reason": ""}).status_code == 422
     assert client.post("/consolidate/CONS-1/decide", data={"choice": "keep_exception", "reason": "keep until owners agree"}).status_code == 200
     assert any(a["action"] == "consolidation_blocked_exception_kept" for a in store.audit_rows())
@@ -94,3 +94,40 @@ def test_pbip_export_is_reproducible(client):
     b = pbip.export(get_catalog(), "CON-SUPPLY-RISK")
     assert a["sha256"] == b["sha256"]
     assert client.post("/export").status_code == 200
+
+
+def test_double_click_writes_one_acknowledgement(client):
+    from concurrent.futures import ThreadPoolExecutor
+    client.post("/contract/create", data=ANS)
+    hid = "HO-" + client.get("/audit").text.split("HO-")[1][:12]
+    with ThreadPoolExecutor(8) as ex:
+        codes = list(ex.map(lambda _: client.post(f"/handover/{hid}/ack", data={"actor": "Launch Excellence Lead"}).status_code, range(8)))
+    assert codes.count(200) == 1
+    assert sum(1 for a in store.audit_rows() if a["action"] == "handover_acknowledged") == 1
+
+
+def test_decision_is_not_repeatable(client):
+    client.post("/contract/create", data=ANS)
+    d = {"choice": "fix_mapping", "reason": "agreed denominator"}
+    assert client.post("/consolidate/CONS-1/decide", data=d).status_code == 200
+    assert client.post("/consolidate/CONS-1/decide", data=d).status_code == 422
+    assert contracts.versions("CON-SUPPLY-RISK") == [1, 2]
+
+
+@pytest.mark.parametrize("q2", ["Stock below 0", "stock below nan", "stock below inf", "Stock below"])
+def test_silly_thresholds_are_refused(client, q2):
+    assert client.post("/contract/create", data={**ANS, "q2": q2}).status_code == 422
+
+
+def test_escalation_role_rules(client):
+    assert client.post("/contract/create", data={**ANS, "q3": "  launch excellence lead "}).status_code == 303
+    store.reset()
+    assert client.post("/contract/create", data={**ANS, "q3": "Supply Analytics Lead"}).status_code == 422
+    assert client.post("/contract/create", data={**ANS, "q3": "Shift Team Lead"}).status_code == 422
+
+
+def test_unknown_ids_are_clean_errors(client):
+    assert client.post("/handover/HO-nope/ack", data={"actor": "x"}).status_code == 404
+    assert client.post("/consolidate/NOPE/decide", data={"choice": "approve", "reason": "x"}).status_code in (409, 422)
+    assert client.post("/contract/v2").status_code == 409
+    assert client.get("/shift?role=Nobody").status_code == 200

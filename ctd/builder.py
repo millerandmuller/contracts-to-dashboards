@@ -1,7 +1,7 @@
 """Interview answers + catalog evidence -> contract proposal. Code builds it; validation decides."""
 from __future__ import annotations
 
-from .catalog import Catalog, get_catalog
+from .catalog import Catalog
 from .interview import ontology_by_role, parse_cadence, parse_threshold, pick_lead_kpi
 
 # Where each number comes from in the pack. Monthly series or a single snapshot.
@@ -30,6 +30,15 @@ def scope_from_cluster(cat: Catalog, analysis: dict, product_name: str) -> dict:
             "request_ids": [r["request_id"] for r in analysis["requests"] if r["product_context"] == product_name]}
 
 
+def _match_role(text: str) -> str:
+    """Match the typed role to the role list, ignoring case and spaces."""
+    t = " ".join(text.split()).lower()
+    for r in ontology_by_role():
+        if r.lower() == t:
+            return r
+    return " ".join(text.split())
+
+
 def propose(cat: Catalog, role: str, answers: dict, analysis: dict, product_name: str = "Xarelto") -> dict:
     o = ontology_by_role()[role]
     thr = parse_threshold(answers["q2"])
@@ -39,7 +48,7 @@ def propose(cat: Catalog, role: str, answers: dict, analysis: dict, product_name
     lead = cat.canonical_kpi(kname)
     needed = [k for k in analysis["needed"] if k != lead]
     owner = next((i for i, r in cat.owners.iterrows() if r.role == role and r.status == "active"), None)
-    escal = answers["q3"].strip()
+    escal = _match_role(answers["q3"])
     scope = scope_from_cluster(cat, analysis, product_name)
     cadence = parse_cadence(answers["q1"])
     cov_assets = [a["asset_id"] for a in analysis["assets"]]
@@ -49,7 +58,7 @@ def propose(cat: Catalog, role: str, answers: dict, analysis: dict, product_name
         "owner_id": owner,
         "decision": answers["q1"].split(".")[0].strip().rstrip("?") + ".",
         "cadence": cadence,
-        "lead_kpi": {"kpi_id": lead, "threshold": {"amber": thr, "red": max(1.0, thr / 2),
+        "lead_kpi": {"kpi_id": lead, "threshold": {"amber": thr, "red": round(thr / 2, 2),
                                                    "unit": KPI_SOURCE[kname]["unit"], "direction": "below"}},
         "neighbour_kpis": needed[:2],
         "scope": scope,

@@ -9,9 +9,12 @@
 <div class="claim"><div class="n">{{ [a.requests|length, a.assets|length, a.stale_owners|length][loop.index0] }}</div>
   <div class="t">{{ c.text }}</div><div class="cite">{{ c.cite.text() }}</div></div>
 {% endfor %}
-<div class="note">{{ explain.text }}
+<div class="note" id="explain">{{ explain.text }}
   {% if explain.cached %}<span class="badge cached" title="The model was not used: {{ explain.why }}">cached</span>{% else %}<span class="badge" title="{{ explain.why }}">model</span>{% endif %}</div>
 
+{% if explain.live %}<script>
+fetch('/explain.json').then(r=>r.json()).then(j=>{if(j.cached)return;const e=document.getElementById('explain');e.firstChild.textContent=j.text+' ';const b=e.querySelector('.badge');if(b){b.textContent='model';b.classList.remove('cached')}}).catch(()=>{});
+</script>{% endif %}
 <div class="two">
 <div>
 <h3>The {{ a.requests|length }} requests</h3>

@@ -63,6 +63,9 @@ def _live(contract_id: str, pair: str) -> bool:
 def get(hid: str) -> dict:
     with store.conn() as db:
         h = db.execute("SELECT * FROM handovers WHERE handover_id=?", (hid,)).fetchone()
+    if h is None:
+        raise NotAllowed(f"No handover {hid}.")
+    with store.conn() as db:
         tr = [dict(r) for r in db.execute("SELECT * FROM transitions WHERE handover_id=? ORDER BY id", (hid,))]
     d = json.loads(h["body"])
     d["state"] = h["state"]
@@ -109,8 +112,15 @@ def close(hid: str, actor_role: str, reason: str) -> dict:
 
 
 def _transition(hid: str, to: str, by: str, reason: str) -> None:
+    """State change is guarded in SQL, so a double click or a race writes exactly one transition."""
+    allowed_from = ("open",) if to == "acknowledged" else ("open", "acknowledged")
     with store.conn() as db:
-        db.execute("UPDATE handovers SET state=? WHERE handover_id=?", (to, hid))
+        db.execute("BEGIN IMMEDIATE")
+        cur = db.execute(f"UPDATE handovers SET state=? WHERE handover_id=? AND state IN ({','.join('?' * len(allowed_from))})",
+                         (to, hid, *allowed_from))
+        if cur.rowcount != 1:
+            db.rollback()
+            raise NotAllowed("Someone just changed this handover. Reload to see the current state.")
         db.execute("INSERT INTO transitions (handover_id,to_state,by,at,reason) VALUES (?,?,?,?,?)", (hid, to, by, store.now(), reason))
     store.audit(by, f"handover_{to}", hid, reason)
 
