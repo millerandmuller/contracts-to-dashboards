@@ -13,7 +13,7 @@ from ctd.app import app
 
 ANS = {"q1": "Which country needs stock this month. Once a month.", "q2": "Stock below four weeks. Then I flag the medicine and country for review.", "q3": "Launch Excellence Lead"}
 STATIC = Path(__file__).resolve().parent.parent / "ctd" / "static"
-PAGES = ["/", "/interview", "/interview?prepared=1", "/contract", "/consolidate", "/shift", "/export", "/audit"]
+PAGES = ["/", "/interview", "/interview?prepared=1", "/contract", "/contract/card", "/it", "/consolidate", "/shift", "/export", "/audit"]
 
 
 @pytest.fixture()

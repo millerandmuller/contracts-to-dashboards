@@ -5,6 +5,9 @@ Since AI Hackathon 2026, Bayer challenge "Build Less, Build Better: AI for Gover
 A vague request ("a monthly supply-risk dashboard by medicine and country") becomes a **versioned role contract**.
 Before anything is built, the catalog is searched: the request arrived 9 times, 6 existing assets already carry 3 of the 4 numbers, 2 of them belong to inactive owners.
 From one contract, **two role views** are drawn (they never count as assets). A threshold crossing opens a **handover** (open / acknowledged / closed) that only the receiving role can acknowledge. A **preservation test** blocks a consolidation that would silently flip a decision. Every change lands in an append-only **audit log**. The contract exports as a **Power BI project (PBIP)**. A role the catalog cannot serve gets an honest refusal that names the gap.
+IT sees the **same contract** from its side: the semantic models behind it, their refresh status and lineage, and a handover to the model owner when a refresh fails (a third view, still one asset). For the shift lead, the refusal stays the first sentence; after it, the same contract form runs on a small **curated** shift data set, where the shift change itself is a handover the incoming lead acknowledges.
+
+Pages: Inbox `/` · Three questions `/interview` · Contract `/contract/card` · Two roles, one contract `/contract` · IT view `/it` · Consolidation `/consolidate` · Shift Team Lead request `/shift` and `/shift/curated` · Audit log `/audit` · Export `/export`.
 
 ## Run
 
@@ -26,6 +29,8 @@ Works offline. With `ANTHROPIC_API_KEY` set, three short texts come from the mod
 | Handovers with role rights and computed overdue | `ctd/handovers.py` | no |
 | Preservation test and human decision | `ctd/preserve.py` | no |
 | Honest refusal (gap found by code) | `ctd/refuse.py` | wording only |
+| IT view: models behind the contract from `Lineage_Edges` and `Semantic_Models`, refresh handover | `ctd/it.py` | no |
+| Shift change on curated shift data, kept apart from the pack's asset count | `ctd/shift.py` | no |
 | PBIP export, deterministic (same contract, same hash) | `ctd/pbip.py` | no |
 | Short explanatory texts | `ctd/gateway.py` | yes, with fallback |
 | Interview reading: proposes contract fields from the answers; code checks every field; the contract is built from the checked result | `ctd/reader.py` | yes, with fixture fallback |
@@ -43,6 +48,8 @@ Retrieval finds, never decides · owner must be active · one contract per respo
 | Prepared interview answers, cached model texts | `[KURATIERT]`, shown as "prepared" / "cached" |
 | Two KPI formulas for the preservation test (`data/formulas.yaml`) | `[KURATIERT]`, synthetic; the pack has none. The test mechanics are real |
 | Response window of 48 h, acknowledgement wording | `[KURATIERT]` |
+| `data/curated/shifts.csv` (2 lines, 3 weeks, 3 shifts a day, written by `make_shifts.py`), the shift lead's three answers, the 45-minute line | `[KURATIERT]`, badge "curated shift data, not from the pack, not from any plant" on every view; never counted as an asset of the pack's catalog |
+| PL on the inbox: what a governance rule of the pack asks for (RULE-001, -002, -003); PL on the IT view: every model behind the contract healthy | defined on the page, never called a budget |
 | Roles in the demo are picked, not logged in | simplification; rights are still enforced on the server |
 | PBIP folder | generated from the published PBIP/PBIR/TMDL structure, **not yet opened in Power BI Desktop** |
 
