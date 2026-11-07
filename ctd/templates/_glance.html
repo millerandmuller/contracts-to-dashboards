@@ -1,0 +1,52 @@
+{# Glance layout (F16): the parts every role card shares, so the Views page, the IT page and the curated shift page draw one hierarchy.
+   Status on the left, the handover as the only framed box on the right, one quiet line, three folds. Two weights (400, 600). #}
+{% set CHIPS = {'open': '○', 'acknowledged': '◐', 'closed': '●'} %}
+
+{# Role name, the question in the role's words, then one small grey line (focus rule, or the curated badge). #}
+{% macro head(role, ask) %}<div class="g-head"><h2 class="g-role">{{ role }}</h2><p class="g-ask">{{ ask }}</p>{% if caller is defined %}<div class="g-focus">{{ caller() }}</div>{% endif %}</div>{% endmacro %}
+
+{# Lead number 34 px with the unit small, then one quiet line: line, difference, percent and an 8 px variance bar. fav=true is green, false is red. #}
+{% macro lead(what, big, unit, pl, d, pct, pct_num, fav) %}
+<p class="g-what">{{ what }}</p>
+<div class="g-big">{{ big }}<small>{{ unit }}</small></div>
+<div class="g-cos"><span>line {{ pl }}</span><span class="{{ '' if fav else 'bad' }}">{{ d }}</span><span class="{{ '' if fav else 'bad' }}">{{ pct }}<span class="g-bar" title="Difference to the line in percent; the full track is 50 %" aria-hidden="true"><i class="{{ 'good' if fav else 'bad' }}" style="width:{{ [100, (pct_num|abs * 2)|round(0)]|min }}%"></i></span></span></div>{% endmacro %}
+
+{# The counter row: what waits on me, what I wait on, and after an acknowledgement what I took over. #}
+{% macro counts(ctr, receiver) %}<div class="g-wait">{% if receiver %}<span>Waiting on me <b>{{ ctr.on_me|length }}</b>{% if ctr.taken_over %} · taken over by me <b>{{ ctr.taken_over|length }}</b>{% endif %}</span><span>I am waiting on others <b>{{ ctr.on_others|length }}</b></span>
+  {% else %}<span>I am waiting on others <b>{{ ctr.on_others|length }}</b></span><span>Waiting on me <b>{{ ctr.on_me|length }}</b></span>{% endif %}</div>{% endmacro %}
+
+{# One handover as the only framed box. Blue 2 px frame when something waits on this role or has been taken over.
+   first: only the first box of a card carries the counter row. after_js: what runs after a click (refreshStage on the Views page, a reload elsewhere). closable: whether this page offers "Close with reason".
+   The caller block adds page-specific lines (the blocker on the IT page, the open points on the shift page). #}
+{% macro box(h, role, ctr, after_js, closable=True, note=None, first=True) %}
+{% set recv = (role == h.to_role) %}
+<div class="g-ho{{ ' on' if h.state == 'acknowledged' or (h.state == 'open' and recv) }}" data-state="{{ h.state }}">
+  {% if first %}{{ counts(ctr, recv) }}{% endif %}
+  <div class="g-hline"><span class="g-hid">{{ h.handover_id }}</span>
+    <span class="chip chip-{{ h.state }}" data-chip="{{ h.state }}"><span class="shape" aria-hidden="true">{{ CHIPS[h.state] }}</span> {{ h.state }}</span>
+    {% if h.overdue %}<span class="badge bad">OVERDUE</span>{% endif %}<span class="g-due">{{ due_text(h) }}</span></div>
+  <p class="g-arrow">{% if recv %}← from <b>{{ h.from_role }}</b>{% else %}→ <b>{{ h.to_role }}</b>{% endif %} · {{ {'refresh': 'model', 'shift_change': 'shift change after the'}.get(h.kind, 'pair') }} <span class="g-hid">{{ h.pair }}</span></p>
+  <p class="g-asked">asked: <em>{{ h.requested_action }}</em></p>
+  {% if caller is defined %}{{ caller() }}{% endif %}
+  {% for t in h.transitions if t.to_state != 'open' %}<p class="g-took">{% if t.to_state == 'acknowledged' %}Seen and taken over by {{ t.by }}, {{ t.at|hhmm }}{% else %}Closed by {{ t.by }}, {{ t.at|hhmm }}: {{ t.reason }}{% endif %}</p>{% endfor %}
+  <div class="g-act">
+    {% if h.state == 'open' %}
+      {% if recv %}<button class="go" onclick="act('/handover/{{ h.handover_id }}/ack',{actor:'{{ role }}'{% if note %},note:'{{ note }}'{% endif %}},{{ after_js }})">Acknowledge</button><span class="g-na">means: seen and taken over{{ ' at shift start' if h.kind == 'shift_change' }}. Not done.</span>
+      {% else %}<span class="g-na">not available to you: only {{ h.to_role }} can acknowledge</span>{% endif %}
+    {% endif %}
+    {% if closable and h.state == 'acknowledged' %}<span class="g-na">closing needs a reason</span>{% endif %}
+    {% if closable and h.state != 'closed' %}<button class="ghost" onclick="var r=prompt('Why can this be closed?');if(r)act('/handover/{{ h.handover_id }}/close',{actor:'{{ role }}',reason:r},{{ after_js }})">Close with reason</button>{% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{# The box column when nothing was handed to or from this role. #}
+{% macro nobox(ctr, receiver, text) %}<div class="g-ho">{{ counts(ctr, receiver) }}<p class="g-na">{{ text }}</p></div>{% endmacro %}
+
+{# One quiet line: who is before and after this role in the contract's own words. #}
+{% macro nextline(before, after, after_note='') %}<div class="g-next"><span class="lbl">Next to you</span>
+  <span>◂ before you: {% for n in before %}<b>{{ n }}</b>{{ ', ' if not loop.last }}{% else %}nobody named in the contract{% endfor %}</span>
+  <span>after you: {% for n in after %}<b>{{ n }}</b>{{ ', ' if not loop.last }}{% else %}nobody named in the contract{% endfor %}{{ after_note }} ▸</span></div>{% endmacro %}
+
+{# A closed-on-load fold with a "+" on the right. key makes the open state survive the refresh after an acknowledgement. #}
+{% macro fold(key, title, count) %}<details class="g-fold" data-fold="{{ key }}"><summary><span>{{ title }}</span><span class="n">{{ count }}</span></summary>{{ caller() }}</details>{% endmacro %}

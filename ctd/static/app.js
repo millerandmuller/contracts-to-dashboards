@@ -9,6 +9,7 @@ async function act1(url,data,after){
   if((j.error||'').startsWith('Someone just changed')||(j.error||'').startsWith('This handover is already')){if(after)await after(j);return true}
   if(!r.ok||j.ok===false){toast(j.error||'That did not work.');return false}
   if(after)await after(j);return true}
+function reloadPage(){location.reload()}
 async function refreshStage(){
   const r=await fetch('/contract?fragment=1');if(!r.ok)return;
   document.getElementById('stage').innerHTML=await r.text();
@@ -22,3 +23,8 @@ async function refreshStage(){
 // Interview: a "for example" line copies its text into its own field. No request, no reload.
 document.addEventListener('click',e=>{const b=e.target.closest('button.exfill');if(!b)return;const f=document.getElementById(b.dataset.for);if(!f)return;
   f.value=b.dataset.text;f.dispatchEvent(new Event('input',{bubbles:true}));f.focus()});
+
+// Glance layout: a fold the viewer opened stays open when the stage is redrawn after an acknowledgement.
+(function(){const draw=window.refreshStage;if(!draw)return;
+  window.refreshStage=async function(){const open=[...document.querySelectorAll('#stage details[data-fold][open]')].map(d=>d.dataset.fold);
+    await draw();open.forEach(k=>{const d=document.querySelector('#stage details[data-fold="'+k+'"]');if(d)d.open=true})}})();

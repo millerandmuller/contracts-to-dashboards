@@ -130,4 +130,5 @@ def counters(contract_id: str, role: str) -> dict:
     hs = [h for h in all_for(contract_id) if h["state"] != "closed"]
     on_me = sorted([h for h in hs if h["to_role"] == role and h["state"] == "open"], key=lambda h: h["created_at"])
     on_others = sorted([h for h in hs if h["from_role"] == role], key=lambda h: h["created_at"])
-    return {"on_me": on_me, "on_others": on_others}
+    taken_over = sorted([h for h in hs if h["to_role"] == role and h["state"] == "acknowledged"], key=lambda h: h["created_at"])
+    return {"on_me": on_me, "on_others": on_others, "taken_over": taken_over}

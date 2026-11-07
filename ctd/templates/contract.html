@@ -1,7 +1,20 @@
 {% extends "base.html" %}
+{% if glance() %}{% set glance_band = true %}{% endif %}
 {% block kicker %}VIEWS · TWO ROLES, ONE CONTRACT · <span class="mono">{{ c.contract_id }} v{{ c.version }}</span>{% endblock %}
 {% block question %}Which medicine-country pair needs stock action this month, and who takes it over?{% endblock %}
+{% block pagemeta %}{% if glance() %}<button class="ghost small" title="Creates version {{ c.version + 1 }} with name, time and reason; both views follow. It adds forecast accuracy as a number next to the lead number." onclick="act('/contract/v2',{reason:'Added forecast accuracy as a neighbour number'},()=>location.reload())">Publish next version</button>{% endif %}{% endblock %}
+{# The one place the contract line is printed (F16 point 1). The counter lives in it, so the refresh after an acknowledgement still updates it. #}
+{% block bandline %}{% if glance() %}{% set a = views[0].audit_line %}<div class="g-meta" data-trail><span>owner <span class="mono">{{ a.owner_id }}</span>, {{ a.owner_state }}</span><span class="sep"> · </span><span>observed {{ a.observed }}</span><span class="sep"> · </span><span>rule {{ a.rule }}</span><span class="sep"> · </span><span>rendered from contract, {{ a.manual }}</span><span class="sep"> · </span><span class="counter" id="counter" title="Views are configuration over a contract. They never count as assets.">Assets: <b>{{ counters.assets }}</b> · Views: <b>{{ counters.views }}</b></span></div>{% endif %}{% endblock %}
 {% block body %}
+{% if glance() %}
+<a id="views"></a><div id="stage">{% include "_stage.html" %}</div>
+<div class="g-below">
+  <details class="g-fold" id="contract"><summary><span>The contract behind these views</span><span class="n">{{ c.contract_id }} v{{ c.version }} · versions {{ versions|join(', ') }} · YAML</span></summary>
+    <p class="ctx">Every field as a page, with its evidence: <a href="/contract/card">the contract card</a>.</p><pre class="yaml">{{ yaml }}</pre></details>
+  <details class="g-fold"><summary><span>Last changes</span><span class="n">{{ audit|length }} entries · append-only</span></summary>
+    <table class="g-tab"><tr><th>When</th><th>Who</th><th>What</th><th>Why</th></tr>{% for a in audit %}<tr><td class="cite">{{ a.at[11:16] }}</td><td>{{ a.actor }}</td><td>{{ a.action }} <span class="cite">{{ a.subject }}</span></td><td>{{ a.reason }}</td></tr>{% endfor %}</table></details>
+</div>
+{% else %}
 <div class="row" id="views-head"><span class="cite">owner {{ c.owner_id }} (active, checked) · versions: {{ versions|join(', ') }}</span>
   <span class="right row">
     <button class="ghost" onclick="act('/contract/v2',{reason:'Added forecast accuracy as a neighbour number'},()=>location.reload())">Publish next version (add forecast accuracy)</button>
@@ -11,4 +24,5 @@
 <details><summary class="cite">Show contract {{ c.contract_id }} v{{ c.version }} (YAML)</summary><pre class="yaml">{{ yaml }}</pre></details>
 <h3>Last changes</h3>
 <table><tr><th>When</th><th>Who</th><th>What</th><th>Why</th></tr>{% for a in audit %}<tr><td class="cite">{{ a.at[11:16] }}</td><td>{{ a.actor }}</td><td>{{ a.action }} <span class="cite">{{ a.subject }}</span></td><td>{{ a.reason }}</td></tr>{% endfor %}</table>
+{% endif %}
 {% endblock %}

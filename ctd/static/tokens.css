@@ -241,3 +241,77 @@ details.evidence>summary{cursor:pointer;font-size:12px;font-weight:600;letter-sp
 /* interview: the example under a field is a button that fills that field */
 button.exfill{display:block;background:none;border:0;min-height:0;padding:2px 0;margin:0;font:400 13px var(--sans);color:var(--ctx);text-align:left;cursor:pointer}
 button.exfill:hover,button.exfill:focus-visible{color:var(--navy);text-decoration:underline}
+/* F16 glance layout (after docs/mockups/views-glance.html). Two weights only, 400 and 600. Labels are small grey capitals, never bold.
+   Spacing on an 8 px grid, 20 px inside the cards. Classes are g- prefixed so the v3 layout keeps its own rules. */
+.pagehead.glanceband{flex-wrap:wrap;align-items:flex-start;justify-content:space-between;background:var(--tint);border-bottom:0;margin:-20px -28px 24px;padding:16px 28px 12px}
+.glanceband .titles{flex:1 1 420px}
+.glanceband h1.q{color:var(--blue);margin:2px 0 8px}
+.glanceband .pagemeta{flex-direction:row;align-items:center;gap:8px;white-space:normal}
+.pagemeta button.small{min-height:32px;font-size:12px;padding:0 12px}
+.g-meta{flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;font-size:12px;color:var(--ctx)}
+.g-meta .mono{color:var(--ink)}.g-meta b{color:var(--ink);font-weight:600}
+.g-meta .counter{color:var(--ink)}
+.g-state{display:flex;justify-content:flex-end;gap:4px;font-size:12px;color:var(--ctx);margin:0 0 8px}
+.g-state b{color:var(--ink)}
+.gcards{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start}
+@media(min-width:1280px){.gcards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.gcards .card{border:1px solid var(--line);background:var(--paper)}
+.g-head{padding:16px 20px 0}
+h2.g-role{font-size:17px;font-weight:600;line-height:1.3;margin:0;color:var(--navy)}
+.g-ask{font-size:14px;color:var(--ctx);margin:0}
+.g-focus{font-size:11px;color:var(--ctx);margin-top:8px}
+.g-top{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:24px;padding:16px 20px 8px}
+.g-top>div{min-width:0}
+.g-label{font-size:11px;font-weight:400;letter-spacing:.06em;text-transform:uppercase;color:var(--ctx);margin:0 0 8px}
+.g-what{font-size:14px;margin:0 0 4px}
+.g-big{font-size:34px;font-weight:600;line-height:1;letter-spacing:-.01em}
+.g-big small{font-size:14px;font-weight:400;color:var(--ctx);margin-left:4px;letter-spacing:0}
+.g-cos{display:flex;flex-wrap:wrap;align-items:center;gap:0 16px;margin:8px 0 16px;font-size:14px;color:var(--ctx)}
+.g-cos .bad{color:var(--bad)}
+.g-bar{display:inline-block;width:72px;height:8px;border-left:1px solid var(--ink);vertical-align:middle;margin-left:8px}
+.g-bar i{display:block;height:100%}.g-bar i.bad{background:var(--bad)}.g-bar i.good{background:var(--good)}
+.g-lead svg.cols{width:100%;max-width:100%;height:auto}
+.g-say{font-size:14px;margin:16px 0 0;max-width:40ch}
+.g-ho{border:1px solid var(--line);padding:16px;background:var(--paper)}
+.g-ho+.g-ho{margin-top:8px}
+.g-ho.on{border:2px solid var(--blue);padding:15px}
+.g-wait{display:flex;justify-content:space-between;flex-wrap:wrap;gap:0 16px;font-size:13px;margin-bottom:8px}
+.g-wait b{font-weight:600}
+.g-wait span{white-space:nowrap}
+.g-hline{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.g-hid{font:400 12px var(--mono);color:var(--ctx)}
+.g-due{margin-left:auto;font-size:12px;color:var(--ctx)}
+.g-arrow{margin:8px 0 0;font-size:14px}.g-arrow b{font-weight:600}
+.g-asked{margin:8px 0 0;font-size:14px}.g-asked em{font-style:italic}
+.g-took{margin:8px 0 0;font-size:14px;font-weight:600}
+.g-act{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin-top:16px}
+.g-act button{width:100%;justify-content:center}
+.g-act button.ghost{min-height:36px;font-size:13px}
+.g-na{font-size:12px;color:var(--ctx)}
+.g-ho ul.points{margin:8px 0 0 16px}
+.g-next{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 24px;margin-top:8px;padding:8px 20px 16px;border-top:1px solid var(--line);font-size:13px;color:var(--ctx)}
+.g-next .lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.g-next b{font-weight:600;color:var(--ink)}
+.g-folds{border-top:1px solid var(--line);padding:0 20px 8px}
+.g-fold{border-bottom:1px solid var(--line)}
+.g-folds .g-fold:last-child,.g-below .g-fold:last-child{border-bottom:0}
+.g-fold summary{cursor:pointer;list-style:none;padding:8px 0;font-size:13px;display:flex;gap:8px;justify-content:space-between;align-items:baseline}
+.g-fold summary::-webkit-details-marker{display:none}
+.g-fold summary .n{margin-left:auto;color:var(--ctx);font-size:12px}
+.g-fold summary::after{content:"+";color:var(--ctx);font-size:16px;line-height:1;margin-left:8px}
+.g-fold[open] summary::after{content:"−"}
+.g-tab{border-collapse:collapse;width:100%;font-size:13px;margin:0 0 8px}
+.g-tab th{font-size:10px;font-weight:400;letter-spacing:.06em;text-transform:uppercase;color:var(--ctx);text-align:left;padding:4px 8px 4px 0}
+.g-tab th.num{text-align:right}
+.g-tab td{padding:4px 8px 4px 0;border-top:1px solid var(--line);border-bottom:0;vertical-align:baseline}
+.g-tab td.num{text-align:right}
+.g-tab td.ctxc{color:var(--ctx)}
+.g-src{font:400 11px/1.5 var(--mono);color:var(--ctx);padding:0 0 8px}
+.gcards+.closer{margin-top:24px}
+.gcards+.closer .legend{max-width:80ch;font-size:12px}
+.g-below{border-top:1px solid var(--line);margin-top:16px}
+.g-below .g-fold:first-child{border-bottom:1px solid var(--line)}
+.g-below pre.yaml{margin:0 0 8px}
+.g-below p.ctx{margin:0 0 8px}
+@media(min-width:1280px){.gcards.one{grid-template-columns:minmax(0,1fr);max-width:1180px}}
+@media(max-width:1000px){.g-top{grid-template-columns:minmax(0,1fr)}}

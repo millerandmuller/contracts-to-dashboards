@@ -1,0 +1,36 @@
+{# Curated shift card in the glance hierarchy (F16). The badge stays on the card; the contract line is in the band. #}
+{% import "_glance.html" as g %}
+{% set k = v.kpi %}
+<section class="card" aria-label="View for {{ v.role }}">
+  {% call g.head(v.role, v.question) %}<span class="badge curated">{{ v.badge }}</span>{% endcall %}
+  <div class="g-top">
+    <div class="g-lead">
+      <p class="g-label">Status</p>
+      {{ g.lead('Downtime, ' ~ k.line ~ ', ' ~ k.when, k.ac|fmt(0), 'min', k.pl|fmt(0), k.d|signed(0), (k.pct|signed(0)) ~ ' %', k.pct, k.fav) }}
+      {{ columns(v.series, k.pl, 'shift-' ~ (1 if v.is_receiver else 0), scale_max=60, bad_above=True, dspan=40) }}
+      <p class="g-say">{{ k.line }} stood still {{ k.ac|fmt(0) }} minutes ({{ k.reason }}). Your limit is {{ k.pl|fmt(0) }} minutes stopped per shift, from answer 2. Previous shift: {{ k.prev|fmt(0) }} minutes. <span class="fnr">[1]</span></p>
+    </div>
+    <div>
+      <p class="g-label">Hand over</p>
+      {% for h in v.handovers %}{% call g.box(h, v.role, v.counters, 'reloadPage', closable=False, note='taken over at shift start', first=loop.first) %}
+        <ul class="points">{% for p in h.points %}<li>{{ p.what }} <span class="ctxc">· if stuck: {{ p.to }} · <span class="mono">{{ p.cite }}</span></span></li>{% endfor %}</ul>
+        <p class="g-na">record of truth: {{ h.system_of_record }}</p>{% endcall %}
+      {% else %}{{ g.nobox(v.counters, v.is_receiver, 'No handovers.') }}{% endfor %}
+    </div>
+  </div>
+  {{ g.nextline(v.before or c.upstream_roles, v.after) }}
+  <div class="g-folds">
+    {% call g.fold('shift-' ~ (1 if v.is_receiver else 0) ~ '-why', 'Why: by line, against the line ' ~ k.pl|fmt(0) ~ ' min', v.lines|length ~ ' lines') %}
+      <p class="ctx">Downtime per shift, {{ k.line }}, minutes · AC ■ PL □ · last {{ v.series|length }} shifts · E early, L late, N night. ΔPL per shift: red unfavourable (above the line), green favourable.</p>
+      <table class="g-tab"><tr><th>line</th><th class="num">AC, min</th><th class="num">PL</th><th class="num">ΔPL</th><th>reason</th><th>record</th></tr>
+      {% for r in v.lines %}<tr><td>{{ r.line }}</td><td class="num"><b>{{ r.down }}</b></td><td class="num ctxc">{{ k.pl|fmt(0) }}</td><td class="num">{{ r.d|signed(0) }}</td><td class="ctxc">{{ r.reason }}</td><td class="mono ctxc">{{ r.id }}</td></tr>{% endfor %}</table>
+    {% endcall %}
+    {% call g.fold('shift-' ~ (1 if v.is_receiver else 0) ~ '-next', 'Next to the lead number', 'same shift, both lines') %}
+      <table class="g-tab">{% for n in v.neighbours %}
+        <tr><td>{{ n.line }}</td><td>output <b>{{ n.produced|fmt }}</b> <span class="ctxc">of {{ n.planned|fmt }} planned, {{ n.out_pct|fmt(0) }} %</span></td><td>material: <b>{{ n.material }}</b></td><td>waiting for QC release: <b>{{ n.pending }}</b></td><td class="mono ctxc">{{ n.id }}</td></tr>{% endfor %}</table>
+    {% endcall %}
+    {% call g.fold('shift-' ~ (1 if v.is_receiver else 0) ~ '-src', 'Sources', '1 citation') %}
+      <div class="g-src">[1] data/curated/shifts.csv {{ k.id }}, previous {{ k.prev_id }} · curated, not from the pack, not from any plant · <a href="/audit">audit log</a></div>
+    {% endcall %}
+  </div>
+</section>

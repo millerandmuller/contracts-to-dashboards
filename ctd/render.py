@@ -75,6 +75,9 @@ def lollipop(prev: float | None, cur: float | None, lo: float, hi: float, amber:
     return Markup("".join(svg))
 
 
+ASK_SENDER = "What do I pass on this month?"  # [KURATIERT] role-language question on the glance card
+ASK_RECEIVER = "What is waiting for me?"
+
 MONTH_LETTER = "JFMAMJJASOND"
 
 
@@ -134,8 +137,13 @@ def due_text(h: dict) -> str:
 
 
 def view_template() -> str:
-    """CTD_VIEW=v1 or v2 draws an earlier layout (plan B); the default is v3. Read per request so a switch needs no restart."""
-    return {"v1": "_view.html", "v2": "_view_v2.html"}.get(os.environ.get("CTD_VIEW", "v3"), "_view_v3.html")
+    """CTD_VIEW=v1, v2 or v3 draws an earlier layout (plan B); the default is v4, the glance layout (F16). Read per request so a switch needs no restart."""
+    return {"v1": "_view.html", "v2": "_view_v2.html", "v3": "_view_v3.html"}.get(os.environ.get("CTD_VIEW", "v4"), "_view_v4.html")
+
+
+def glance() -> bool:
+    """True while the glance layout is drawn. The IT page and the curated shift page follow the same switch."""
+    return view_template() == "_view_v4.html"
 
 
 def change(prev: float | None, cur: float | None) -> dict | None:
@@ -153,6 +161,7 @@ env.globals["columns"] = columns
 env.globals["pct_lollipop"] = pct_lollipop
 env.globals["due_text"] = due_text
 env.globals["view_template"] = view_template
+env.globals["glance"] = glance
 env.globals["rule_version"] = RULE_VERSION
 env.globals["manual_edits"] = lambda: store.audit_count("view_edited")
 
@@ -263,7 +272,7 @@ def view_model(cat: Catalog, c: dict, role: str) -> dict:
     observed = (focus or (rows[0] if rows else {})).get("month", "")
     owner_state = cat.owner_state(c["owner_id"])
     manual = store.audit_count("view_edited")
-    audit_line = {"contract": f"{c['contract_id']} v{c['version']}", "owner": f"{c['owner_id']} {owner_state}", "observed": observed,
+    audit_line = {"contract": f"{c['contract_id']} v{c['version']}", "owner": f"{c['owner_id']} {owner_state}", "owner_id": c["owner_id"], "owner_state": owner_state, "observed": observed,
                   "rule": f"v{RULE_VERSION}", "manual": "no manual edits" if manual == 0 else f"{manual} manual edits"}
     question = (c["decision"].rstrip(".?") + ", and who takes it over?") if role == c["role"] else "What has been handed to me, and what do I do with it?"
     focus_rule = next((v["focus_rule"] for v in c["views"] if v["for_role"] == role), "")
@@ -285,22 +294,22 @@ def view_model(cat: Catalog, c: dict, role: str) -> dict:
     def_note = note(f"{lname} {c['lead_kpi']['kpi_id']} · Product_Market_Monthly: {focus['pair']}/{focus['month']}") if focus else 0
     gloss = lambda r: (f"{r} (decides {onto[r]['example_decision']})" if r in onto and onto[r].get("source") == "pack" else r)  # noqa: E731
     if role == c["escalation_to"]:
-        before = [{"role": c["role"], "line": (f"lowest escalated pair {focus['market_name']} {focus['latest']:.1f} wk · ΔPL {focus['dpl_pct']:+.0f} %" if focus else ""), "focus": True}]
+        before = [{"role": c["role"], "name": c["role"], "line": (f"lowest escalated pair {focus['market_name']} {focus['latest']:.1f} wk · ΔPL {focus['dpl_pct']:+.0f} %" if focus else ""), "focus": True}]
         after = []
     else:
-        before = [{"role": gloss(r), "line": "", "focus": False} for r in c.get("upstream_roles", [])]
+        before = [{"role": gloss(r), "name": r, "line": "", "focus": False} for r in c.get("upstream_roles", [])]
         after = []
         for r in c["downstream_roles"]:
             open_h = [h for h in hs if h["to_role"] == r and h["state"] != "closed"]
             line = f"{open_h[0]['handover_id']} {open_h[0]['state']}" if open_h else "nothing handed over"
             if open_h and open_h[0]["state"] == "acknowledged":
                 line += " · taken over " + next(t["at"][11:16] for t in open_h[0]["transitions"] if t["to_state"] == "acknowledged")
-            after.append({"role": gloss(r), "line": line, "focus": bool(open_h)})
+            after.append({"role": gloss(r), "name": r, "line": line, "focus": bool(open_h)})
     return {"kpi": kpi, "pl": pl, "def_note": def_note, "before": before, "after": after, "role": role, "c": c, "lead_name": lname, "lead_plain": KPI_SOURCE[lname]["plain"], "thr": thr, "rows": mine,
             "all_rows": rows, "focus": focus, "neighbours": nb, "foots": foots, "counters": ctr, "handovers": hs,
             "side_roles": side_roles, "focus_rule": focus_rule, "is_receiver": role == c["escalation_to"],
             "action": c["permitted_action"], "decision": c["decision"], "onto": onto[role],
-            "audit_line": audit_line, "question": question, "lead_change": focus["change"] if focus else None,
+            "audit_line": audit_line, "question": question, "ask": ASK_RECEIVER if role == c["escalation_to"] else ASK_SENDER, "lead_change": focus["change"] if focus else None,
             "lead_prev": focus["prev"] if focus else None, "prev_month": _prev_month(focus["series"]) if focus else ""}
 
 

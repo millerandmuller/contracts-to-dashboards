@@ -1,0 +1,41 @@
+{# Glance card (F16, after docs/mockups/views-glance.html): status left, the handover as the only framed box right, one quiet line, three folds.
+   The contract line is not here: the page prints it once, in the band. #}
+{% import "_glance.html" as g %}
+{% set k = v.kpi %}{% set f = v.focus %}{% set slug = v.role|replace(' ', '-')|lower %}
+<section class="card" aria-label="View for {{ v.role }}">
+  {% call g.head(v.role, v.ask) %}focus: {{ v.focus_rule }}{% endcall %}
+  <div class="g-top">
+    <div class="g-lead">
+      <p class="g-label">Status</p>
+      {% if k %}
+      {{ g.lead('Stock cover in weeks, ' ~ f.market_name, k.ac|fmt(1), 'weeks', k.pl|fmt(1), k.d|signed(1), (k.pct|signed(0)) ~ ' %', k.pct, k.fav) }}
+      {{ columns(f.series, k.pl, v.role|replace(' ', '-')) }}
+      <p class="g-say">{{ k.below }} of {{ k.pairs }} pairs are below {{ k.pl|fmt(0) }} weeks this month. {{ f.sentence }} <span class="fnr">[{{ f.note }}]</span></p>
+      {% else %}<p class="g-say">Nothing has been passed to you. Nothing is below the line two months in a row.</p>{% endif %}
+    </div>
+    <div>
+      <p class="g-label">Hand over</p>
+      {% for h in (v.handovers|rejectattr('state', 'equalto', 'closed')|list) + (v.handovers|selectattr('state', 'equalto', 'closed')|list) %}{% call g.box(h, v.role, v.counters, 'refreshStage', first=loop.first) %}{% endcall %}
+      {% else %}{{ g.nobox(v.counters, v.is_receiver, 'No handovers.') }}{% endfor %}
+    </div>
+  </div>
+  {{ g.nextline(v.before|map(attribute='name')|list, v.after|map(attribute='name')|list) }}
+  <div class="g-folds">
+    {% if k %}{% call g.fold(slug ~ '-why', 'Why: by pair, against the line ' ~ (k.pl|fmt(1)), (v.all_rows|selectattr('escalated') if v.is_receiver else v.all_rows)|list|length ~ (' pair in focus' if v.is_receiver else ' pairs')) %}
+      <table class="g-tab"><tr><th>pair</th><th class="num">AC, weeks</th><th class="num">PL</th><th>ΔPL</th><th class="num">ΔPL %</th></tr>
+      {% for r in v.all_rows if v.is_receiver is false or r.escalated %}<tr><td>{{ r.market_name }}</td><td class="num"><b>{{ r.latest|fmt(1) }}</b></td><td class="num ctxc">{{ k.pl|fmt(1) }}</td><td>{{ pct_lollipop(r.dpl_pct, r.dpl >= 0 if r.dpl is not none else none) }}</td><td class="num">{{ r.dpl_pct|signed(0) }} %</td></tr>{% endfor %}</table>
+      <p class="ctx">Chart: stock cover, lowest escalated pair first, weeks · AC ■ PL □ · {{ f.series[0].month[:7] }} to {{ f.series[-1].month[:7] }}. ΔPL per month: red unfavourable, green favourable, hatched = a forecast month in the data pack.</p>
+      {% for b in v.before + v.after if b.line %}<p class="ctx">{{ 'before you' if b in v.before else 'after you' }}: {{ b.name }} · {{ b.line }}</p>{% endfor %}
+    {% endcall %}{% endif %}
+    {% if f %}{% call g.fold(slug ~ '-next', 'Next to the lead number', v.neighbours|length ~ ' numbers') %}
+      <table class="g-tab"><tr><th>number</th><th class="num">AC</th><th class="num">PY, last month</th><th>ΔPY</th><th class="num">ΔPY %</th></tr>
+      {% for n in v.neighbours %}<tr><td>{{ n.plain }}</td><td class="num"><b>{{ n.latest|fmt(1 if n.unit != 'units' else 0) }}</b> <span class="ctxc">{{ n.unit }}</span><sup class="fn">[{{ n.note }}]</sup></td>
+        {% if n.series and n.unit == 'units' %}<td colspan="3" class="ctxc">volume, no line in the contract; shown as is, not compared</td>
+        {% elif n.series %}<td class="num ctxc">{{ n.prev|fmt(1) }} last month</td><td>{{ pct_lollipop(n.pct) }}</td><td class="num">{{ n.pct|signed(0) if n.pct is not none else '–' }} %</td>
+        {% else %}<td colspan="3" class="ctxc">{{ n.gap }}</td>{% endif %}</tr>{% endfor %}</table>
+    {% endcall %}{% endif %}
+    {% call g.fold(slug ~ '-src', 'Sources', v.foots|length ~ ' citations') %}
+      <div class="g-src">{% for t in v.foots %}[{{ loop.index }}] {{ t }}{{ ' · ' if not loop.last }}{% endfor %} · <a href="/audit">audit log</a></div>
+    {% endcall %}
+  </div>
+</section>

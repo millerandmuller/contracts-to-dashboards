@@ -103,13 +103,14 @@ def test_columns_equal_the_data_and_pl_is_the_contract_line(client):
 
 def test_legend_names_the_line_and_never_calls_it_a_budget(client):
     page = client.get("/contract").text
-    assert "line set in the contract (answer 2), not a budget" in page
+    assert "outlined line set in the contract, not a budget" in page
     assert not re.search(r"PL\s*[□=:·-]*\s*(plan|budget)\b|(plan|budget)\s*\(PL\)", page, re.I)
 
 
 def test_three_versions_of_the_handover_row(client):
     page = client.get("/contract").text
-    assert page.count('class="hrow open"') == 2 and page.count("Waiting on me: 1") == 1 and "not available to you" in page
+    assert page.count('class="g-ho" data-state="open"') == 1 and page.count('class="g-ho on" data-state="open"') == 1  # the receiver's box is framed
+    assert page.count("Waiting on me <b>1</b>") == 1 and "not available to you" in page
     hid = "HO-" + page.split("HO-")[1][:12]
     client.post(f"/handover/{hid}/ack", data={"actor": "Launch Excellence Lead"})
     page = client.get("/contract").text

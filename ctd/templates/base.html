@@ -12,9 +12,11 @@
   <div class="rule">rule <span class="mono">v{{ rule_version }}</span> · rendered from contract<br>{{ 'no manual edits' if manual_edits()==0 else manual_edits()|string ~ ' manual edits' }}<br>synthetic data pack</div>
 </nav>
 <main>
-  <div class="pagehead">
+  {# A page that sets glance_band gets the tinted band (F16): its bandline block prints the one contract line, and that line carries the counter. #}
+  <div class="pagehead{{ ' glanceband' if glance_band is defined }}">
     <div class="titles"><div class="kicker">{% block kicker %}{% endblock %}</div><h1 class="q">{% block question %}{% endblock %}</h1></div>
-    <div class="pagemeta">{% block pagemeta %}{% endblock %}<span class="counter" id="counter" title="Views are configuration over a contract. They never count as assets.">Assets: <b>{{ counters.assets }}</b> · Views: <b>{{ counters.views }}</b></span></div>
+    <div class="pagemeta">{% block pagemeta %}{% endblock %}{% if glance_band is not defined %}<span class="counter" id="counter" title="Views are configuration over a contract. They never count as assets.">Assets: <b>{{ counters.assets }}</b> · Views: <b>{{ counters.views }}</b></span>{% endif %}</div>
+    {% block bandline %}{% endblock %}
   </div>
   {% block body %}{% endblock %}
   {% set nx = demo_next(path) %}{% if nx %}{% set needs = (not has_contract) and nx.href not in no_contract_needed %}

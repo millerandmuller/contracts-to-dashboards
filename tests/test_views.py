@@ -22,28 +22,37 @@ def client():
 
 
 def trail_lines(html: str) -> list[str]:
-    return re.findall(r'<div class="trail" data-trail>(.*?)</div>', html)
+    """The contract line(s) as plain text. The glance layout prints it once, in the band; v3 printed it in the strip and on both cards."""
+    return [re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", m)).strip() for m in re.findall(r'<div class="g-meta" data-trail>(.*?)</div>', html, re.S)]
 
 
-def expected_trail(c: dict) -> str:
+def expected_line(c: dict) -> str:
     cat = get_catalog()
     cnt = contracts.counters()
     month = cat.series(c["scope"]["product_id"], c["scope"]["markets"][0])[-1]["month"]
-    return (f"rendered from {c['contract_id']} v{c['version']} · owner {c['owner_id']} {cat.owner_state(c['owner_id'])} · observed {month} · rule v1 · "
-            f"no manual edits · Assets: {cnt['assets']}, Views: {cnt['views']}")
+    return (f"owner {c['owner_id']}, {cat.owner_state(c['owner_id'])} · observed {month} · rule v1 · rendered from contract, no manual edits · "
+            f"Assets: {cnt['assets']} · Views: {cnt['views']}")
 
 
-def test_audit_trail_line_equals_contract_and_database_values(client):
+def test_contract_line_is_printed_once_and_equals_contract_and_database_values(client):
     client.post("/contract/create", data=ANS)
     for _ in range(2):  # after create, then after acknowledge and v2
         c = contracts.latest("CON-SUPPLY-RISK")
-        lines = trail_lines(client.get("/contract").text)
-        assert len(lines) == 2 and set(lines) == {expected_trail(c)}
-        assert "Assets: 1, Views: 2" in lines[0]
+        page = client.get("/contract").text
+        assert trail_lines(page) == [expected_line(c)]
+        main = page.split("<main>")[1]
+        assert main.count("rendered from contract") == 1 and main.count("Assets: <b>") == 1  # nowhere else on the page
         hid = "HO-" + client.get("/audit").text.split("HO-")[1][:12]
         client.post(f"/handover/{hid}/ack", data={"actor": RECV})
         client.post("/contract/v2", data={"reason": "add forecast accuracy"})
-    assert "v2" in trail_lines(client.get("/contract").text)[0] and "Assets: 1, Views: 2" in trail_lines(client.get("/contract").text)[1]
+    page = client.get("/contract").text
+    assert "CON-SUPPLY-RISK v2" in page and "Assets: <b>1</b> · Views: <b>2</b>" in page
+
+
+def test_v3_still_prints_the_trail_on_both_cards(client, monkeypatch):
+    client.post("/contract/create", data=ANS)
+    monkeypatch.setenv("CTD_VIEW", "v3")
+    assert len(re.findall(r'<div class="trail" data-trail>', client.get("/contract").text)) == 2
 
 
 def test_state_chip_has_shape_and_class_in_both_views(client):
@@ -77,7 +86,7 @@ def test_old_view_is_one_switch_away(client, monkeypatch):
     page = client.get("/contract").text
     assert "Focus rule:" in page and "data-trail" not in page
     monkeypatch.delenv("CTD_VIEW")
-    assert "data-trail" in client.get("/contract").text
+    assert "g-meta" in client.get("/contract").text
 
 
 def test_no_view_text_calls_the_zones_a_company_standard(client):
@@ -213,7 +222,7 @@ def test_handover_comes_before_the_pairs_in_the_view(client):
     client.post("/contract/create", data=ANS)
     page = client.get("/contract").text
     first = page.index("<section")
-    assert page.index("C · ACT · 300 S", first) < page.index("B · NEXT TO THE LEAD NUMBER", first)
+    assert page.index("Hand over", first) < page.index("Next to the lead number", first)
 
 
 @pytest.mark.parametrize("q2", ["Stock below 4.", "Stock under 3.5.", "Stock below 4 weeks."])

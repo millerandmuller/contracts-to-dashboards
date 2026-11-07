@@ -1,0 +1,43 @@
+{# IT card in the glance hierarchy (F16): one card, the model list in the "Why" fold. #}
+{% import "_glance.html" as g %}
+{% set k = v.kpi %}{% set bad = v.models|rejectattr('refresh', 'equalto', 'healthy')|list %}
+<section class="card" aria-label="View for {{ v.onto.role }}">
+  {% call g.head(v.onto.role, 'What is waiting for me?') %}focus: models behind the contract, failed refresh first{% endcall %}
+  <div class="g-top">
+    <div class="g-lead">
+      <p class="g-label">Status</p>
+      {{ g.lead('Models behind the contract that refresh without problems', k.ac, 'of ' ~ k.pl ~ ' models', k.pl, k.d|signed(0), (k.pct|signed(0)) ~ ' %', k.pct, k.fav) }}
+      <p class="g-say">{{ bad|length }} of {{ v.models|length }} models do not refresh cleanly.{% for m in bad if m.refresh == 'failed' %} {{ m.model_id }} failed; it feeds {% for a in m.scope_assets %}{{ a.asset_id }} {{ a.name }} ({{ a.endorsement }}){% endfor %}.{% endfor %} <span class="fnr">[1]</span></p>
+    </div>
+    <div>
+      <p class="g-label">Hand over</p>
+      {% for h in v.handovers %}{% call g.box(h, v.onto.role, v.counters, 'reloadPage', closable=False, first=loop.first) %}<p class="g-asked">{{ h.observed_blocker }}</p><p class="g-na">record of truth: {{ h.system_of_record }}</p>{% endcall %}
+      {% else %}{{ g.nobox(v.counters, true, 'No handovers. Every model behind the contract refreshes.') }}{% endfor %}
+    </div>
+  </div>
+  {{ g.nextline(v.onto.upstream, [c.role], ' (reads the stock numbers built on these models)') }}
+  <div class="g-folds">
+    {% call g.fold('it-why', 'Why: the models behind the contract, against the line ' ~ k.pl, v.models|length ~ ' models') %}
+      <table class="g-tab models">
+        {% for m in v.models %}<tr><td><span class="chip refresh-{{ m.refresh }}"><span class="shape" aria-hidden="true">{{ m.shape }}</span> {{ m.refresh }}</span></td>
+          <td class="mono">{{ m.model_id }}</td><td>{{ m.name }}</td><td class="ctxc">{{ m.frequency }} · {{ m.endorsement }}</td>
+          <td>feeds {% for a in m.scope_assets %}<span class="mono">{{ a.asset_id }}</span> {% endfor %}{% if m.fed|length > m.scope_assets|length %}<span class="ctxc">+{{ m.fed|length - m.scope_assets|length }} more</span>{% endif %}</td>
+          <td class="ctxc">owner <span class="mono">{{ m.owner_id }}</span> {{ m.owner_state }}</td></tr>{% endfor %}
+      </table>
+      <p class="ctx">PL = every model behind the contract refreshes healthy; set when the IT view was added. Shape and word, never colour alone: ● healthy ◐ warning ○ failed.</p>
+      <p class="g-label">Lineage, model → asset · RULE-004 {{ rules['RULE-004'].rule_name|lower }}</p>
+      {% for m in bad %}<div class="lin mono">{{ m.model_id }} <span class="ctxc">({{ m.refresh }})</span> → {% for a in m.scope_assets %}{{ a.asset_id }} {{ a.name }}{% endfor %} → {{ m.fed|length - m.scope_assets|length }} more assets read the same model</div>{% endfor %}
+    {% endcall %}
+    {% call g.fold('it-next', 'Next to the lead number', '4 numbers, whole catalog') %}
+      <table class="g-tab">
+        <tr><td>Models with a failed refresh, whole catalog</td><td class="num"><b>{{ v.wide.failed }}</b> <span class="ctxc">of {{ v.wide.models }}, {{ v.wide.failed_certified }} of them certified</span><sup class="fn">[2]</sup></td></tr>
+        <tr><td>Models with a refresh warning, whole catalog</td><td class="num"><b>{{ v.wide.warning }}</b> <span class="ctxc">of {{ v.wide.models }}</span><sup class="fn">[2]</sup></td></tr>
+        <tr><td>Assets that read the models behind this contract</td><td class="num"><b>{{ v.fed_all|length }}</b> <span class="ctxc">a broken refresh reaches all of them</span><sup class="fn">[3]</sup></td></tr>
+        <tr><td>Models with poor names for questions in plain language (RULE-007)</td><td class="num"><b>{{ v.wide.poor_ai }}</b> <span class="ctxc">of {{ v.wide.models }}</span><sup class="fn">[2]</sup></td></tr>
+      </table>
+    {% endcall %}
+    {% call g.fold('it-src', 'Sources', '3 citations') %}
+      <div class="g-src">[1] Semantic_Models {% for m in v.models %}{{ m.model_id }}{{ ', ' if not loop.last }}{% endfor %} · Analytics_Assets {{ v.scope_assets|join(', ') }} · [2] Semantic_Models: refresh_status, endorsement, ai_readiness · [3] Lineage_Edges MODEL_TO_ASSET · <a href="/audit">audit log</a></div>
+    {% endcall %}
+  </div>
+</section>

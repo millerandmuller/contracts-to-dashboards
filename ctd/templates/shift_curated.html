@@ -1,14 +1,26 @@
 {% extends "base.html" %}
+{% if glance() %}{% set glance_band = true %}{% endif %}
 {% block kicker %}GOVERNANCE · SHIFT TEAM LEAD · <span class="mono">{{ c.contract_id }} v{{ c.version }}</span> · CURATED{% endblock %}
 {% block question %}The shift change is a handover. Who takes over what at shift start?{% endblock %}
+{% block bandline %}{% if glance() %}<div class="g-meta" data-trail><span>rendered from <span class="mono">{{ c.contract_id }} v{{ c.version }}</span> (curated)</span><span class="sep"> · </span><span>rendered from contract, no manual edits</span><span class="sep"> · </span><span>{{ c.views|length }} views, kept apart from the pack's catalog</span><span class="sep"> · </span><span class="counter" id="counter" title="Views are configuration over a contract. They never count as assets.">pack catalog unchanged: Assets: <b>{{ counters.assets }}</b> · Views: <b>{{ counters.views }}</b></span></div>{% endif %}{% endblock %}
 {% block body %}
 <div class="curbanner" data-badge>{{ sd.BADGE }}</div>
 <p class="first">The organizer's pack has no shift data, so for the pack the answer stays: nothing was built. Below, the same contract form runs on a small curated shift data set.</p>
-<div class="qa3">{% for q in views[0].questions %}<div><div class="ctx">{{ q.text }}</div><div><b>{{ c.answers[q.id] }}</b></div></div>{% endfor %}</div>
+{% if not glance() %}<div class="qa3">{% for q in views[0].questions %}<div><div class="ctx">{{ q.text }}</div><div><b>{{ c.answers[q.id] }}</b></div></div>{% endfor %}</div>{% endif %}
+{% if glance() %}
+<div class="g-state">state shown: <b>{{ shown }} acknowledgement</b></div>
+<div class="gcards">
+{% for v in views %}{% include "_view_shift_v4.html" %}{% endfor %}
+</div>
+{% if last_audit %}<div class="closer"><div class="mono lastaudit">{{ last_audit.at[:16]|replace('T',' ') }} · {{ last_audit.actor }} · {{ last_audit.action|replace('_',' ') }} {{ last_audit.subject }}{% if last_audit.reason %} · reason: {{ last_audit.reason }}{% endif %}</div>
+<div class="legend">status in 3 s, cause in 30 s, action in 300 s · black actual · outlined line set in the contract, not a budget · red unfavourable, green favourable · only the incoming lead can acknowledge · {{ sd.BADGE }}</div></div>{% endif %}
+<div class="g-below"><details class="g-fold"><summary><span>The three answers behind this contract</span><span class="n">3 answers</span></summary><div class="qa3">{% for q in views[0].questions %}<div><div class="ctx">{{ q.text }}</div><div><b>{{ c.answers[q.id] }}</b></div></div>{% endfor %}</div></details></div>
+{% else %}
 <div class="strip"><span>state shown: <b>{{ shown }} acknowledgement</b></span><span>{{ c.contract_id }} v{{ c.version }} (curated) · its views: {{ c.views|length }} · pack catalog unchanged: Assets: {{ counters.assets }} · Views: {{ counters.views }}</span><span>rendered from contract, no manual edits</span></div>
 <div class="two cards">
 {% for v in views %}{% include "_view_shift.html" %}{% endfor %}
 </div>
 {% if last_audit %}<div class="closer"><div class="mono lastaudit">{{ last_audit.at[:16]|replace('T',' ') }} · {{ last_audit.actor }} · {{ last_audit.action|replace('_',' ') }} {{ last_audit.subject }}{% if last_audit.reason %} · reason: {{ last_audit.reason }}{% endif %}</div>
 <div class="legend">AC ■ actual · PL □ line set in the contract (answer 2), not a budget · ΔPL red unfavourable, green favourable · only the incoming lead can acknowledge · {{ sd.BADGE }}</div></div>{% endif %}
+{% endif %}
 {% endblock %}
