@@ -9,7 +9,7 @@
 <nav class="side" aria-label="Chapters">
   <div class="brand"><b>Contracts to Dashboards</b><span>governed analytics · prototype</span></div>
   {% for grp, items in nav %}<div class="grp">{{ grp }}</div>
-  {% for label, href, match in items %}<a href="{{ href }}" class="{{ 'on' if match and path==match }}">{{ label }}</a>{% endfor %}{% endfor %}
+  {% for label, href, match in items %}{% set needs = (not has_contract) and href not in ['/', '/interview', '/shift', '/audit'] %}<a href="{{ href }}" class="{{ 'on' if match and path==match }}{{ ' needs' if needs }}"{% if needs %} title="Needs a contract first. Answer the three questions."{% endif %}>{{ label }}{% if needs %}<span class="why">needs a contract</span>{% endif %}</a>{% endfor %}{% endfor %}
   <div class="spacer"></div>
   <form method="post" action="/reset"><button class="ghost" title="Start the demo from zero">Reset demo</button></form>
   <div class="rule">rule <span class="mono">v{{ rule_version }}</span> · rendered from contract<br>{{ 'no manual edits' if manual_edits()==0 else manual_edits()|string ~ ' manual edits' }}<br>synthetic data pack</div>

@@ -8,6 +8,7 @@
 <div class="split">
 <div class="mainc">
   <p class="ctx">Answer in your own words. One or two lines each is enough. The grey text is the example the role list holds for a {{ role }}.</p>
+  {% if wanted and not existing %}<div class="note"><b>You asked for "{{ wanted[0] }}". There is no contract yet, so that page is empty.</b> Every view, the IT page, the consolidation test and the export are generated from a contract. Answer the three questions below (the prepared answers are already in) and "{{ wanted[0] }}" opens right after.</div>{% endif %}
   {% if existing %}<div class="note">A contract already exists (version {{ existing.version }}). <a href="/contract/card">Open it</a>.</div>{% endif %}
   <form method="post" action="/interview" id="qform">
   <input type="hidden" name="prepared" value="{{ 1 if prepared else 0 }}">

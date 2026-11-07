@@ -33,6 +33,7 @@ def lead_owner() -> str:
 
 
 def html(name: str, request: Request, beat: int, **kw) -> HTMLResponse:
+    kw.setdefault("has_contract", contracts.latest(CID) is not None)
     return HTMLResponse(render.page(name, **ctx(request, beat, **kw)))
 
 
@@ -85,11 +86,16 @@ def _inbox(cat, a: dict) -> dict:
 
 
 # ---- beat 2: three questions ---------------------------------------------------------
+WANTED = {"contract": ("Contract", "/contract/card"), "views": ("Two roles, one contract", "/contract"),
+          "it": ("IT: the model behind it", "/it"), "consolidate": ("Consolidation", "/consolidate"),
+          "export": ("Export to Power BI", "/export")}
+
+
 @app.get("/interview", response_class=HTMLResponse)
-def interview_page(request: Request, prepared: int = 0):
+def interview_page(request: Request, prepared: int = 0, wanted: str = ""):
     answers = gateway.fixture("interview_supply_analytics_lead.json")["answers"] if prepared else {"q1": "", "q2": "", "q3": ""}
     return html("interview.html", request, 2, role=LEAD, qs=interview.questions(LEAD), answers=answers, prepared=bool(prepared),
-                error=None, proposal=None, followup=None, existing=contracts.latest(CID))
+                error=None, proposal=None, followup=None, existing=contracts.latest(CID), wanted=WANTED.get(wanted))
 
 
 @app.post("/interview", response_class=HTMLResponse)
@@ -179,7 +185,7 @@ def _stage(request: Request, beat: int = 3):
 def contract_page(request: Request, fragment: int = 0):
     s = _stage(request)
     if not s:
-        return RedirectResponse("/interview?prepared=1", status_code=303)
+        return RedirectResponse("/interview?prepared=1&wanted=views", status_code=303)
     return html("_stage.html" if fragment else "contract.html", request, 3, **s)
 
 
@@ -189,7 +195,7 @@ def contract_card(request: Request):
     cat = get_catalog()
     c = contracts.latest(CID)
     if not c:
-        return RedirectResponse("/interview?prepared=1", status_code=303)
+        return RedirectResponse("/interview?prepared=1&wanted=contract", status_code=303)
     v = render.view_model(cat, c, c["role"])
     k = v["kpi"]
     figs = [[{"label": "STOCK COVER, AC", "value": f"{k['ac']:.1f}", "unit": "wk"}, {"label": "PL", "value": f"{k['pl']:.1f}", "cls": "pl"},
@@ -209,7 +215,7 @@ def it_page(request: Request):
     cat = get_catalog()
     c = contracts.latest(CID)
     if not c:
-        return RedirectResponse("/interview?prepared=1", status_code=303)
+        return RedirectResponse("/interview?prepared=1&wanted=it", status_code=303)
     return html("it.html", request, 5, c=c, v=it.view_model(cat, c), added=it.has_view(c), rules=cat.rules(), last_audit=_last())
 
 
@@ -268,7 +274,7 @@ def close(hid: str, actor: str = Form(...), reason: str = Form("")):
 def consolidate(request: Request, p: str = "CONS-1"):
     c = contracts.latest(CID)
     if not c:
-        return RedirectResponse("/interview?prepared=1", status_code=303)
+        return RedirectResponse("/interview?prepared=1&wanted=consolidate", status_code=303)
     if p not in {x["id"] for x in preserve.config()["proposals"]}:
         p = "CONS-1"
     res = preserve.run(get_catalog(), c, p)
@@ -366,7 +372,7 @@ def export_run(request: Request):
     with store.WRITE_LOCK:  # one export at a time: the folder is rewritten from scratch
         c = contracts.latest(CID)
         if not c:
-            return RedirectResponse("/interview?prepared=1", status_code=303)
+            return RedirectResponse("/interview?prepared=1&wanted=export", status_code=303)
         res = pbip.export(get_catalog(), CID)
         again = pbip.export(get_catalog(), CID)  # the proof on screen: same contract, same hash, twice
         sm = pbip.summary(res)

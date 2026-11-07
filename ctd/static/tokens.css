@@ -23,6 +23,8 @@ nav.side .grp{font-size:10px;letter-spacing:.08em;color:#9FB3C1;padding:14px 20p
 nav.side a{display:block;color:#fff;text-decoration:none;padding:6px 20px 6px 17px;border-left:3px solid transparent;font-size:13px}
 nav.side a:hover{background:rgba(255,255,255,.06)}
 nav.side a.on{border-left-color:var(--blue);background:rgba(255,255,255,.09);font-weight:600}
+nav.side a.needs{color:#9FB3C1}
+nav.side a.needs .why{display:block;font-size:10px;color:#7F97A8;margin-top:1px}
 nav.side .spacer{flex:1}
 nav.side form{margin:0;padding:8px 20px}
 nav.side form button{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);padding:3px 10px;font-size:11px;font-weight:400}
