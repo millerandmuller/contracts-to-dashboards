@@ -1,6 +1,7 @@
 """PBIP export: a Power BI project folder generated from the contract. Deterministic, no model, no timestamps.
 
-Status: generated from the published PBIP/PBIR/TMDL structure. NOT yet opened in Power BI Desktop.
+Status: validated with Microsoft's report-authoring CLI and published to a Power BI workspace through the Fabric REST API
+(8 November 2026, model refreshed, report rendered in the browser). Not opened in Power BI Desktop; the team works on Macs.
 """
 from __future__ import annotations
 
@@ -23,6 +24,11 @@ def _id(*parts: str) -> str:
     return hashlib.sha1("|".join(parts).encode()).hexdigest()[:20]
 
 
+def _uuid(*parts: str) -> str:
+    h = hashlib.sha1("|".join(parts).encode()).hexdigest()
+    return f"{h[:8]}-{h[8:12]}-{h[12:16]}-{h[16:20]}-{h[20:32]}"
+
+
 def _write(p: Path, text: str) -> None:
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(text if text.endswith("\n") else text + "\n", encoding="utf-8", newline="\n")
@@ -30,6 +36,17 @@ def _write(p: Path, text: str) -> None:
 
 def _json(p: Path, obj: dict) -> None:
     _write(p, json.dumps(obj, indent=2, sort_keys=True, ensure_ascii=False))
+
+
+def _m_text(s: str) -> str:
+    return '"' + str(s).replace('"', '""') + '"'
+
+
+def _m_row(r: list) -> str:
+    """One Series row as a Power Query record literal: text, text, date, text, text, number or null, text."""
+    y, mo, d = (int(x) for x in str(r[2]).split("-"))
+    val = "null" if r[5] in ("", None) else repr(float(r[5]))
+    return "{%s, %s, #date(%d, %d, %d), %s, %s, %s, %s}" % (_m_text(r[0]), _m_text(r[1]), y, mo, d, _m_text(r[3]), _m_text(r[4]), val, _m_text(r[6]))
 
 
 def export(cat: Catalog, contract_id: str, version: int | None = None) -> dict:
@@ -68,6 +85,9 @@ def export(cat: Catalog, contract_id: str, version: int | None = None) -> dict:
                                    "version": "4.0", "datasetReference": {"byPath": {"path": f"../{name}.SemanticModel"}}})
     _json(sm / "definition.pbism", {"$schema": "https://developer.microsoft.com/json-schemas/fabric/item/semanticModel/definitionProperties/1.0.0/schema.json",
                                     "version": "4.0", "settings": {}})
+    for folder, kind in ((sm, "SemanticModel"), (rp, "Report")):
+        _json(folder / ".platform", {"$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.1.0/schema.json",
+                                     "metadata": {"type": kind, "displayName": name}, "config": {"version": "2.0", "logicalId": _uuid(name, kind)}})
     _write(sm / "definition" / "database.tmdl", "database\n\tcompatibilityLevel: 1567\n")
     _write(sm / "definition" / "model.tmdl",
            "model Model\n\tculture: en-US\n\tdefaultPowerBIDataSourceVersion: powerBI_V3\n\n"
@@ -77,8 +97,9 @@ def export(cat: Catalog, contract_id: str, version: int | None = None) -> dict:
            "\tlineageTag: " + _id(name, "expr") + "\n")
     _write(sm / "definition" / "tables" / "Series.tmdl",
            "table Series\n\tlineageTag: " + _id(name, "series") + "\n\n"
-           "\tmeasure 'Latest Value' = CALCULATE(MAX(Series[Value]), LASTDATE(Series[Month]))\n\t\tformatString: 0.0\n\n"
            "\tmeasure 'Amber Line' = " + str(c["lead_kpi"]["threshold"]["amber"]) + "\n\t\tformatString: 0.0\n\n"
+           "\tmeasure 'Lead value' = CALCULATE(AVERAGE(Series[Value]), Series[Role] = \"lead\")\n\t\tformatString: 0.0\n\n"
+           "\tmeasure 'Pairs below the line' = COUNTROWS(FILTER(VALUES(Series[Market]), CALCULATE([Lead value], LASTDATE(Series[Month])) < [Amber Line]))\n\t\tformatString: 0\n\n"
            "\tcolumn Product\n\t\tdataType: string\n\t\tsourceColumn: Product\n\n"
            "\tcolumn Market\n\t\tdataType: string\n\t\tsourceColumn: Market\n\n"
            "\tcolumn Month\n\t\tdataType: dateTime\n\t\tformatString: yyyy-mm\n\t\tsourceColumn: Month\n\n"
@@ -86,11 +107,12 @@ def export(cat: Catalog, contract_id: str, version: int | None = None) -> dict:
            "\tcolumn Role\n\t\tdataType: string\n\t\tsourceColumn: Role\n\n"
            "\tcolumn Value\n\t\tdataType: double\n\t\tsourceColumn: Value\n\n"
            "\tcolumn ValueKind\n\t\tdataType: string\n\t\tsourceColumn: ValueKind\n\n"
+           # the rows are written into the model itself (the same rows as data/series.csv), so the model refreshes in the
+           # Power BI service without a gateway or a file path; still no clock time, so the bytes stay the same per version
            "\tpartition Series = m\n\t\tmode: import\n\t\tsource =\n"
-           '\t\t\tlet\n\t\t\t\tSource = Csv.Document(File.Contents(DataFolder & "\\series.csv"), [Delimiter=",", Encoding=65001]),\n'
-           "\t\t\t\tHeaders = Table.PromoteHeaders(Source),\n"
-           '\t\t\t\tTyped = Table.TransformColumnTypes(Headers, {{"Month", type date}, {"Value", type number}}, "en-US")\n'
-           "\t\t\tin\n\t\t\t\tTyped\n")
+           "\t\t\tlet\n\t\t\t\tSource = #table(type table [Product = text, Market = text, Month = date, Measure = text, Role = text, Value = number, ValueKind = text], {\n"
+           + ",\n".join("\t\t\t\t\t" + _m_row(r) for r in rows) +
+           "\n\t\t\t\t})\n\t\t\tin\n\t\t\t\tSource\n")
     _write(sm / "definition" / "tables" / "Contract.tmdl",
            "table Contract\n\tlineageTag: " + _id(name, "contract") + "\n\n"
            "\tcolumn Field\n\t\tdataType: string\n\t\tsourceColumn: Field\n\n\tcolumn Value\n\t\tdataType: string\n\t\tsourceColumn: Value\n\n"
@@ -110,15 +132,29 @@ def export(cat: Catalog, contract_id: str, version: int | None = None) -> dict:
     _json(d / "pages" / "pages.json", {"$schema": f"{SCHEMA}/pagesMetadata/1.0.0/schema.json", "pageOrder": [page], "activePageName": page})
     _json(d / "pages" / page / "page.json", {"$schema": f"{SCHEMA}/page/1.0.0/schema.json", "name": page,
                                              "displayName": c["role"] + " - " + c["contract_id"], "displayOption": "FitToPage", "height": 720, "width": 1280})
-    for i, (vname, vtype, x, y, wd, ht, field) in enumerate([
-        ("lead_card", "card", 24, 24, 280, 120, "Latest Value"), ("lead_line", "lineChart", 24, 160, 760, 360, "Value")]):
+    def col(prop: str, active: bool = False) -> dict:
+        d_ = {"field": {"Column": {"Expression": {"SourceRef": {"Entity": "Series"}}, "Property": prop}}, "queryRef": f"Series.{prop}", "nativeQueryRef": prop}
+        return {**d_, "active": True} if active else d_
+
+    def meas(prop: str) -> dict:
+        return {"field": {"Measure": {"Expression": {"SourceRef": {"Entity": "Series"}}, "Property": prop}}, "queryRef": f"Series.{prop}", "nativeQueryRef": prop}
+
+    def title(text: str) -> dict:
+        return {"title": [{"properties": {"text": {"expr": {"Literal": {"Value": "'" + text.replace("'", "''") + "'"}}}}}]}
+
+    visuals = [
+        ("lead_card", "card", 24, 24, 280, 120, {"Values": {"projections": [meas("Pairs below the line")]}},
+         title(f"pairs below the line of {c['lead_kpi']['threshold']['amber']} {c['lead_kpi']['threshold']['unit']}, latest month")),
+        ("lead_line", "lineChart", 24, 160, 760, 360,
+         {"Category": {"projections": [col("Month", True)]}, "Series": {"projections": [col("Market")]}, "Y": {"projections": [meas("Lead value")]}},
+         title(f"{lead} by market, actual; line {c['lead_kpi']['threshold']['amber']} set in the contract")),
+    ]
+    for i, (vname, vtype, x, y, wd, ht, query_state, objects) in enumerate(visuals):
         vid = _id(name, vname)
         _json(d / "pages" / page / "visuals" / vid / "visual.json", {
-            "$schema": f"{SCHEMA}/visualContainer/1.0.0/schema.json", "name": vid,
+            "$schema": f"{SCHEMA}/visualContainer/2.9.0/schema.json", "name": vid,
             "position": {"x": x, "y": y, "z": i, "width": wd, "height": ht},
-            "visual": {"visualType": vtype, "query": {"queryState": {"Values" if vtype == "card" else "Y": {"projections": [
-                {"field": {"Measure" if vtype == "card" else "Column": {"Expression": {"SourceRef": {"Entity": "Series"}}, "Property": field}},
-                 "queryRef": f"Series.{field}"}]}}}}})
+            "visual": {"visualType": vtype, "query": {"queryState": query_state}, "visualContainerObjects": objects}})
     return {"name": name, "root": str(root), "files": sorted(str(p.relative_to(root)) for p in root.rglob("*") if p.is_file()),
             "sha256": tree_hash(root)}
 

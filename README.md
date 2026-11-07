@@ -51,7 +51,7 @@ Retrieval finds, never decides · owner must be active · one contract per respo
 | `data/curated/shifts.csv` (2 lines, 3 weeks, 3 shifts a day, written by `make_shifts.py`), the shift lead's three answers, the 45-minute line | `[KURATIERT]`, badge "curated shift data, not from the pack, not from any plant" on every view; never counted as an asset of the pack's catalog |
 | PL on the inbox: what a governance rule of the pack asks for (RULE-001, -002, -003); PL on the IT view: every model behind the contract healthy | defined on the page, never called a budget |
 | Roles in the demo are picked, not logged in | simplification; rights are still enforced on the server |
-| PBIP folder | generated from the published PBIP/PBIR/TMDL structure, **not yet opened in Power BI Desktop** |
+| PBIP folder | validated with Microsoft's report-authoring CLI (0 errors) and **published to a Power BI workspace through the Fabric REST API** on 8 November 2026: model refreshed, report rendered in the browser (`docs/power-bi-published-2026-11-08.jpg`). Not opened in Power BI Desktop; the team works on Macs |
 
 Data notes: months with no shipments (products not on a market) are shown as gaps, not zeros. The latest month for some pairs is a forecast in the pack and is drawn hollow.
 

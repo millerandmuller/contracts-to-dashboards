@@ -165,9 +165,9 @@ def test_closing_card_numbers_equal_the_run(client):
     assert "Shift Team Lead got a gap, not a view" in text
     assert f"{len(res['files'])} files, same hash twice" in text
     assert f"series.csv, {series_rows} rows)" in page
-    assert "not yet opened in Power BI Desktop" in page
+    assert "published to a Power BI workspace" in page and "not opened in Power BI Desktop" in page
     assert "Contract.tmdl" in page and "report.json" not in page.split('id="tmdl"')[1]
-    assert f"version: {c['version']}" in page and f"owner_id: {c['owner_id']}" in page and "bound to: Series[Latest Value]" in page
+    assert f"version: {c['version']}" in page and f"owner_id: {c['owner_id']}" in page and "bound to: Series[Pairs below the line]" in page
 
 
 def test_honest_line_says_so_when_no_refusal_was_shown(client):
