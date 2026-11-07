@@ -11,12 +11,12 @@
       <span><b>Received:</b> {{ inbox.received }} <span class="ctxc">demo input, not a pack record</span></span>
       <span class="chip chip-open"><span class="shape" aria-hidden="true">○</span> open</span></div>
     <div class="req">“{{ a.request_text }}”</div>
-    <div class="ctx">sender and receiver are roles from sheet Owners{% if inbox.to.of > 1 %}, the receiver shown is the first of {{ inbox.to.of }} active {{ inbox.to.role }}s{% endif %} [3]; the pack does not record who asked{% if a.requests %} · the {{ (a.requests|length + 1)|ordinal }} ask, the last one before it {{ inbox.latest.request_id }} of {{ inbox.latest.request_date }} [1]{% endif %}</div>
+    <div class="ctx">sender and receiver are roles from sheet Owners{% if inbox.to.of > 1 %}, the receiver shown is the first of {{ inbox.to.of }} active {{ inbox.to.role }}s{% endif %}{% if inbox.sender.of > 1 %}, the sender shown is the first of {{ inbox.sender.of }} active {{ inbox.sender.role }}s{% endif %} [3]; the pack does not record who asked{% if a.requests %} · the {{ (a.requests|length + 1)|ordinal }} ask, the last one before it {{ inbox.latest.request_id }} of {{ inbox.latest.request_date }} [1]{% endif %}</div>
   </div>
   <div class="answer" id="answer">{% if a.requests %}A {{ (a.requests|length + 1)|ordinal }} dashboard? No.{% else %}A first dashboard? Not before three questions.{% endif %}</div>
   {% if a.first_time %}<p class="lead">First time this is asked. We still search the catalog for what already exists.</p>{% endif %}
   <ol class="stepper" id="stepper">
-    <li><span class="sn">1</span><div class="st"><div class="sh">requested {{ a.requests|length }} times{% if a.requests %} since {{ inbox.first_month_name }}{% endif %} <span class="fnr">[1]</span></div>
+    <li><span class="sn">1</span><div class="st"><div class="sh">requested {{ a.requests|length }} time{{ 's' if a.requests|length != 1 }}{% if a.requests %} since {{ inbox.first_month_name }}{% endif %} <span class="fnr">[1]</span></div>
       <details class="recs" data-toggle="requests"><summary>show records</summary>
         <div class="kids mono">{% for r in a.requests %}<span>{{ r.request_id }}</span> {% endfor %}</div>
         <div class="ksheet">sheet Business_Requests · {{ a.claims[0].text }} PL 1 = RULE-001, one asset per question.</div></details></div></li>

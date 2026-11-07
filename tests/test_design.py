@@ -41,7 +41,7 @@ def test_active_chapter_carries_the_marker(client):
     assert re.search(r'<a href="/shift" class="on" data-step="7">', client.get("/shift").text)
 
 
-ORDER = ["Inbox", "Three questions", "Contract", "Two roles, one contract", "IT: the model behind it", "Consolidation",
+ORDER = ["Inbox", "Three questions", "Contract", "Two roles, one contract", "Consolidation", "IT: the model behind it",
          "Shift Team Lead request", "Export to Power BI", "Audit log"]
 
 
@@ -53,7 +53,7 @@ def test_nav_numbers_the_demo_path_one_to_nine_and_keeps_the_groups(client):
 
 
 @pytest.mark.parametrize("path,want", [("/", "Next: Three questions"), ("/interview", "Next: Contract"), ("/contract/card", "Next: Two roles, one contract"),
-                                       ("/contract", "Next: IT: the model behind it"), ("/it", "Next: Consolidation"), ("/consolidate", "Next: Shift Team Lead request"),
+                                       ("/contract", "Next: Consolidation"), ("/consolidate", "Next: IT: the model behind it"), ("/it", "Next: Shift Team Lead request"),
                                        ("/shift", "Next: Export to Power BI"), ("/export", "Next: Audit log"), ("/audit", "Back to the Inbox")])
 def test_every_page_ends_with_the_next_page_of_the_demo(client, path, want):
     page = client.get(path).text

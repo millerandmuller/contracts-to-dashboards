@@ -30,7 +30,7 @@ def ctx(request: Request, beat: int, **kw) -> dict:
 
 def lead_owner() -> str:
     """The active owner the builder assigns to the Supply Analytics Lead, read from the Owners sheet."""
-    return _active_owners(get_catalog(), LEAD)[0]
+    return _party(get_catalog(), LEAD)["id"]
 
 
 def _active_owners(cat, role: str) -> list[str]:

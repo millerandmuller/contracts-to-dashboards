@@ -139,3 +139,11 @@ def test_inbox_survives_a_role_without_an_active_owner(client, monkeypatch):
     monkeypatch.setattr(cat, "owners", owners.assign(status=owners.status.where(owners.role != "Data Product Owner", "inactive")))
     r = client.get("/")
     assert r.status_code == 200 and "Data Product Owner · BI team <span class=\"mono ctxc\">no active owner</span>" in r.text
+
+
+def test_pages_survive_a_sender_without_an_active_owner(client, monkeypatch):
+    cat = get_catalog()
+    owners = cat.owners.copy()
+    monkeypatch.setattr(cat, "owners", owners.assign(status=owners.status.where(owners.role != "Supply Analytics Lead", "inactive")))
+    for path in ("/", "/interview", "/audit"):
+        assert client.get(path).status_code == 200, path
