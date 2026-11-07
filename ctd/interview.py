@@ -28,11 +28,12 @@ def ontology_by_role() -> dict[str, dict]:
 
 def questions(role: str) -> list[dict]:
     o = ontology_by_role()[role]
-    return [
-        {"id": "q1", "text": f"What do you decide with this? For example: {o['example_decision']}. How often?"},
-        {"id": "q2", "text": f"When do you have to act? For example: {o['example_signal']}. And what do you do then?"},
-        {"id": "q3", "text": f"Who do you call when you are stuck? For example: {', '.join(o['example_escalation'])}."},
-    ]
+    qs = [("q1", "What do you decide with this? How often?", o["example_decision"], "the business question of the page, and how often it is asked"),
+          ("q2", "When do you have to act? And what do you do then?", o["example_signal"], "the lead number, its line (PL), and what you may do when ΔPL turns unfavourable"),
+          ("q3", "Who do you call when you are stuck?", ", ".join(o["example_escalation"]), "who receives your handovers, and who sits next to you")]
+    full = {"q1": "What do you decide with this? For example: {}. How often?", "q2": "When do you have to act? For example: {}. And what do you do then?",
+            "q3": "Who do you call when you are stuck? For example: {}."}
+    return [{"id": i, "text": full[i].format(ex), "ask": ask, "example": ex, "goes_to": goes} for i, ask, ex, goes in qs]
 
 
 def _tok(s: str) -> set[str]:

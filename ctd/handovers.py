@@ -95,7 +95,7 @@ def acknowledge(hid: str, actor_role: str, note: str = "seen, taking it over") -
         raise NotAllowed(f"Only the {h['to_role']} can acknowledge this. You are the {actor_role}.")
     if h["state"] != "open":
         raise NotAllowed(f"This handover is already {h['state']}.")
-    _transition(hid, "acknowledged", actor_role, note)
+    _transition(hid, "acknowledged", actor_role, note.strip() or "seen, taking it over")
     return get(hid)
 
 

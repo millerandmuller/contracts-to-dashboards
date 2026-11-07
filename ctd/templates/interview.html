@@ -1,33 +1,55 @@
 {% extends "base.html" %}
-{% block kicker %}REQUEST · THREE QUESTIONS{% endblock %}
-{% block question %}Three questions for the {{ role }}{% endblock %}
+{% from "_macros.html" import figs as hfigs %}
+{% block kicker %}REQUEST · THREE QUESTIONS · FOR {{ role|upper }} <span class="mono">{{ lead_owner }}</span> · ABOUT THE REPEATED SUPPLY-RISK REQUEST{% endblock %}
+{% block question %}What does the {{ role }} decide, and when must they act?{% endblock %}
+{% block pagemeta %}<div class="row">{% if prepared %}<span class="badge cached" title="Answers loaded from data/fixtures. Typing works the same.">prepared answers</span>{% endif %}
+  {{ hfigs([[{'label': 'ANSWERED', 'value': answers.values()|select|list|length, 'unit': 'of 3'}, {'label': 'ROLE WORDING', 'value': 'role list · pack role', 'cls': 'small'}]]) }}</div>{% endblock %}
 {% block body %}
-<p class="lead">Short questions, in your own words. The examples come from the role list, not from a model.</p>
-{% if existing %}<div class="note">A contract already exists (version {{ existing.version }}). <a href="/contract">Open it</a>.</div>{% endif %}
-<form method="post" action="/interview" id="qform">
-<input type="hidden" name="prepared" value="{{ 1 if prepared else 0 }}">
-{% for q in qs %}
-  <label class="q" for="{{ q.id }}">{{ loop.index }}. {{ q.text }}</label>
-  <input type="text" id="{{ q.id }}" name="{{ q.id }}" value="{{ answers[q.id] }}" autocomplete="off">
-  {% if q.id=='q1' and followup %}<div class="err">{{ followup }}</div>{% endif %}
-{% endfor %}
-{% if error %}<div class="err">{{ error }}</div>{% endif %}
-<p class="row"><button class="go" type="submit">Show the contract</button>
-{% if not prepared %}<a class="btn ghost" href="/interview?prepared=1">Use the prepared answers</a>{% else %}<span class="badge cached" title="Answers loaded from data/fixtures. Typing works the same.">prepared answers</span>{% endif %}</p>
-</form>
-
-{% if proposal %}
-<h3>Contract proposal (nothing is saved yet)</h3>
-{% if proposal.errors %}
-  {% for e in proposal.errors %}<div class="err">{{ e }}</div>{% endfor %}
-  <div id="reading" data-live="0">{% include "_reading.html" %}</div>
-{% else %}
-  <form method="post" action="/contract/create" class="row">
-    <input type="hidden" name="q1" value="{{ answers.q1 }}"><input type="hidden" name="q2" value="{{ answers.q2 }}"><input type="hidden" name="q3" value="{{ answers.q3 }}">
-    <button class="go" type="submit">Save as version 1 and render the views</button>
+<div class="split">
+<div class="mainc">
+  <p class="ctx">Answer in your own words. One or two lines each is enough. The grey text is the example the role list holds for a {{ role }}.</p>
+  {% if existing %}<div class="note">A contract already exists (version {{ existing.version }}). <a href="/contract/card">Open it</a>.</div>{% endif %}
+  <form method="post" action="/interview" id="qform">
+  <input type="hidden" name="prepared" value="{{ 1 if prepared else 0 }}">
+  {% for q in qs %}
+    <div class="qblock2"><span class="qn">{{ loop.index }}</span><div>
+      <label class="qask" for="{{ q.id }}">{{ q.ask }}</label>
+      <input type="text" id="{{ q.id }}" name="{{ q.id }}" value="{{ answers[q.id] }}" autocomplete="off">
+      <div class="ctx">for example: {{ q.example }}</div>
+      {% if q.id=='q1' and followup %}<div class="yourcall"><b>Is that your call?</b><div class="ctx">{{ followup }}</div></div>{% endif %}
+    </div></div>
+  {% endfor %}
+  {% if error %}<div class="err">{{ error }}</div>{% endif %}
+  <div class="actbar"><button class="go" type="submit">Show the contract</button>
+  {% if not prepared %}<a class="btn ghost" href="/interview?prepared=1">Use the prepared answers</a>{% endif %}
+  <span class="ctx">Nothing is saved yet. You see the proposal and what the code checked first.</span></div>
   </form>
-  <div id="reading" data-live="{{ 1 if live else 0 }}">{% include "_reading.html" %}</div>
-{% endif %}
-<details><summary class="cite">Show the contract as YAML</summary><pre class="yaml">{{ proposal.yaml }}</pre></details>
-{% endif %}
+
+  {% if proposal %}
+  <div class="seclabel"><span>CONTRACT PROPOSAL · NOTHING IS SAVED YET</span></div>
+  {% if proposal.errors %}
+    {% for e in proposal.errors %}<div class="err">{{ e }}</div>{% endfor %}
+    <div id="reading" data-live="0">{% include "_reading.html" %}</div>
+  {% else %}
+    <form method="post" action="/contract/create" class="actbar">
+      <input type="hidden" name="q1" value="{{ answers.q1 }}"><input type="hidden" name="q2" value="{{ answers.q2 }}"><input type="hidden" name="q3" value="{{ answers.q3 }}">
+      <button class="go" type="submit">Save as version 1 and render the views</button><span class="ctx">Asked once. Every later change is logged with name, time and reason.</span>
+    </form>
+    <div id="reading" data-live="{{ 1 if live else 0 }}">{% include "_reading.html" %}</div>
+  {% endif %}
+  <details><summary class="cite">Show the contract as YAML</summary><pre class="yaml">{{ proposal.yaml }}</pre></details>
+  {% endif %}
+</div>
+<aside class="sidec">
+  <div class="seclabel"><span>WHERE EACH ANSWER GOES</span></div>
+  <ol class="next">{% for q in qs %}<li>{{ q.goes_to }}</li>{% endfor %}</ol>
+  <p class="ctx">The numbers themselves are not asked. They come from the catalog, and each one shows where it came from.</p>
+  <div class="seclabel"><span>PREVIEW OF THE PAGE IT CREATES</span></div>
+  {% if preview %}<div class="pvw"><b>{{ preview.question }}</b><div>{{ preview.pair }} · AC <b>{{ preview.ac|fmt(1) }}</b> · PL {{ preview.pl|fmt(1) }} · ΔPL <b>{{ preview.d|signed(1) }}</b></div>
+    <div class="ctx">status in 3 s · cause in 30 s · handover in 300 s</div></div>
+  {% else %}<p class="ctx">Appears once the three answers make a valid proposal.</p>{% endif %}
+  <p class="ctx">Examples are taken from the role {{ role }} in the role list. A <a href="/shift">Shift Team Lead</a> sees the same three questions with plant examples.</p>
+</aside>
+</div>
+<div class="footline"><div>Follow-up “Is that your call?” only appears when an answer names a decision that belongs to another role.</div><div>rule v{{ rule_version }} · synthetic data pack</div></div>
 {% endblock %}

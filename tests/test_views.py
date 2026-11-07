@@ -149,7 +149,7 @@ def test_closing_card_numbers_equal_the_run(client):
     again = pbip.export(cat, "CON-SUPPLY-RISK")
     assert res["sha256"] == again["sha256"]
     series_rows = len((pbip.Path(res["root"]) / "data" / "series.csv").read_text().splitlines()) - 1
-    closing = page[page.index('id="closing"'):page.index("Status:")]
+    closing = page[page.index('id="closing"'):page.index("</aside>")]
     text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", closing))
     assert f"{reqs} requests, 0 new dashboards, Assets: 1" in text
     assert f"v1 → v{c['version']}, every change with name, time, reason" in text

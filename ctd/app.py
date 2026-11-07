@@ -23,7 +23,13 @@ MAX_ANSWER = 500
 
 
 def ctx(request: Request, beat: int, **kw) -> dict:
-    return {"beat": beat, "counters": contracts.counters(), "path": request.url.path, **kw}
+    return {"beat": beat, "counters": contracts.counters(), "path": request.url.path, "lead_owner": lead_owner(), **kw}
+
+
+def lead_owner() -> str:
+    """The active owner the builder assigns to the Supply Analytics Lead, read from the Owners sheet."""
+    o = get_catalog().owners
+    return str(o[(o.role == LEAD) & (o.status == "active")].index[0])
 
 
 def html(name: str, request: Request, beat: int, **kw) -> HTMLResponse:
@@ -102,7 +108,17 @@ def interview_submit(request: Request, q1: str = Form(""), q2: str = Form(""), q
         return html("interview.html", request, 2, **base, error=str(e), proposal=None, followup=follow)
     reading = reader.cached(answers, errs)  # shown at once; the page swaps in the model's reading if it answers in time
     return html("interview.html", request, 2, **base, error=None, proposal={"c": c, "errors": errs, "yaml": contracts.to_yaml(c)}, followup=follow,
-                reading=reading, live=gateway.live())
+                reading=reading, live=gateway.live(), preview=None if errs else _preview(cat, c))
+
+
+def _preview(cat, c: dict) -> dict | None:
+    """The lead numbers the page would open with, computed from the proposal before anything is saved."""
+    from .evaluate import pair_rows
+    rows = [r for r in pair_rows(cat, c) if r["latest"] is not None]
+    if not rows:
+        return None
+    f, pl = rows[0], c["lead_kpi"]["threshold"]["amber"]
+    return {"question": c["decision"].rstrip(".?") + ", and who takes it over?", "pair": f["market_name"], "ac": f["latest"], "pl": pl, "d": f["latest"] - pl}
 
 
 @app.post("/interview/reading", response_class=HTMLResponse)
@@ -367,7 +383,13 @@ def _closing_card(c: dict, res: dict, again: dict, sm: dict) -> list[dict]:
 
 @app.get("/audit", response_class=HTMLResponse)
 def audit_page(request: Request):
-    return html("audit.html", request, 0, rows=store.audit_rows(200))
+    rows = store.audit_rows(200)
+    c = contracts.latest(CID)
+    system = sum(1 for r in rows if r["actor"].startswith("system"))
+    figs = [[{"label": "ENTRIES", "value": len(rows)}, {"label": "WITHOUT REASON, AC", "value": sum(1 for r in rows if not r["reason"].strip())},
+             {"label": "PL", "value": 0, "cls": "pl"}],
+            [{"label": "MANUAL EDITS TO VIEWS", "value": store.audit_count("view_edited")}, {"label": "VERSION", "value": f"v{c['version']}" if c else "–"}]]
+    return html("audit.html", request, 0, rows=rows, figs=figs, people=len(rows) - system, system=system)
 
 
 @app.post("/reset")

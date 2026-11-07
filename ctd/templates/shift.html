@@ -1,32 +1,44 @@
 {% extends "base.html" %}
-{% block kicker %}GOVERNANCE · SHIFT TEAM LEAD REQUEST{% endblock %}
-{% block question %}A different role asks for a view{% endblock %}
+{% from "_macros.html" import figs as hfigs %}
+{% block kicker %}GOVERNANCE · THREE QUESTIONS · ROLE <form method="get" action="/shift" class="inline"><select name="role" onchange="this.form.submit()">{% for r in roles %}<option {{ 'selected' if r==role }}>{{ r }}</option>{% endfor %}</select></form> · {{ g.ontology.source|upper }} ROLE · CATALOG SUPPORT {{ g.ontology.catalog_support|upper }}{% endblock %}
+{% block question %}{{ g.ontology.example_decision[:1]|upper }}{{ g.ontology.example_decision[1:] }}?{% endblock %}
+{% block pagemeta %}{% if not g.supported %}{% set n = g.missing|length %}{{ hfigs([[{'label': 'DATA AVAILABLE, AC', 'value': 0}, {'label': 'REQUIRED, PL', 'value': n, 'cls': 'pl'}, {'label': 'ΔPL', 'value': '−' ~ n}, {'label': 'ΔPL, BAR', 'bar': 100, 'fav': false}]]) }}{% endif %}{% endblock %}
 {% block body %}
-<div class="row">
- <form method="get" action="/shift" class="right row"><select name="role" onchange="this.form.submit()" style="width:auto">{% for r in roles %}<option {{ 'selected' if r==role }}>{{ r }}</option>{% endfor %}</select></form></div>
-<p class="lead">{{ g.ontology.role }} · {{ g.ontology.source }} role · catalog support: <b>{{ g.ontology.catalog_support }}</b></p>
-<h3>Her three questions</h3>
-{% for q in g.questions %}<div class="claim"><div class="t">{{ q.text }}</div></div>{% endfor %}
-
+<div class="split even">
+<div class="mainc">
+  {% for q in g.questions %}<div class="qblock"><div class="qask"><span class="qn">{{ loop.index }}</span> · {{ q.ask }}</div>
+    <div class="ctx">for example: {{ q.example }}</div></div>{% endfor %}
+  <p class="ctx">Same three questions as every role. The examples come from the {{ g.ontology.source }} side of the role list, not from a model.</p>
+</div>
+<aside class="sidec">
 {% if g.supported %}
-<div class="passed">This role has catalog support. <a href="/interview">Build its contract</a> the same way.</div>
+  <div class="passed">This role has catalog support. <a href="/interview">Build its contract</a> the same way.</div>
 {% else %}
-<div class="blocked" id="refusal"><b>Nothing was built.</b> <span id="refusal-text">{{ text.text }}</span>
-  <span class="badge cached" id="refusal-badge" title="{{ text.why }}">cached</span></div>
-{% if live %}<script>
-fetch('/shift.json?role={{ role|urlencode }}').then(r=>r.json()).then(j=>{if(j.cached)return;document.getElementById('refusal-text').textContent=j.text;const b=document.getElementById('refusal-badge');if(b)b.remove()}).catch(()=>{});
-</script>{% endif %}
-<h3>What is missing</h3>
-<table><tr><th>Kind</th><th>Missing</th><th>Checked</th></tr>
-{% for m in g.missing %}<tr><td>{{ m.kind }}</td><td>{{ m.what }}</td><td class="cite">{{ m.checked }}</td></tr>
-{% else %}<tr><td colspan="3">This role has no catalog support in the role list.</td></tr>{% endfor %}</table>
-<h3>How the handover would look</h3>
-<div class="ho open"><div class="row"><span class="state">open</span> <b>{{ preview.from_role }} → {{ preview.to_role }}</b></div>
-<div>Asked: <i>{{ preview.requested_action }}</i></div><div class="cite">No numbers. {{ preview.note }}</div></div>
-{% if role == 'Shift Team Lead' %}
-<h3>Once shift data exists</h3>
-<div class="actbar"><form method="post" action="/shift/curated/create"><button class="ghost">Show the same contract on curated shift data</button></form>
-  <span class="badge curated">curated shift data, not from the pack, not from any plant</span></div>
+  <div class="refusebox" id="refusal"><div class="rhead">{{ "This catalog has no shift data yet." if g.missing|selectattr("what", "equalto", "a view per shift")|list else "This catalog cannot serve this role yet." }}</div>
+    <div><b>Nothing was built.</b> <span id="refusal-text">{{ text.text }}</span> <span class="badge cached" id="refusal-badge" title="{{ text.why }}">cached</span></div>
+    <table class="missing"><tr><th>missing</th><th class="num">found, AC</th><th class="num">needed, PL</th></tr>
+    {% for m in g.missing %}<tr><td><b>{{ m.what }}</b> <span class="ctxc">· {{ m.kind|lower }}</span> <span class="fnr">[{{ loop.index }}]</span></td><td class="num"><b>0</b></td><td class="num ctxc">1</td></tr>{% endfor %}</table>
+    <div>We will not build a view that would have to invent them.</div>
+  </div>
+  {% if live %}<script>
+  fetch('/shift.json?role={{ role|urlencode }}').then(r=>r.json()).then(j=>{if(j.cached)return;document.getElementById('refusal-text').textContent=j.text;const b=document.getElementById('refusal-badge');if(b)b.remove()}).catch(()=>{});
+  </script>{% endif %}
+  {% if role == 'Shift Team Lead' and not g.supported %}
+  <div class="seclabel"><span>ONCE SHIFT DATA EXISTS</span></div>
+  <div class="actbar"><form method="post" action="/shift/curated/create"><button class="ghost">Show the same contract on curated shift data</button></form>
+    <span class="badge curated">curated shift data, not from the pack, not from any plant</span></div>
+  {% endif %}
+  <div class="seclabel"><span>WHAT YOUR PAGE WOULD LOOK LIKE, WITHOUT NUMBERS</span></div>
+  <div class="skeleton">
+    <div class="sk-top"><b>{{ g.ontology.example_decision[:1]|upper }}{{ g.ontology.example_decision[1:] }}?</b><span class="ctxc">no contract · nothing rendered</span></div>
+    <div class="sk-row"><div><span class="kl">A · STATUS · 3 S</span><br>AC — PL — ΔPL —<br><span class="ctxc">needs {{ g.missing[0].what if g.missing }}</span></div>
+      <div><span class="kl">C · ACT · 300 S</span><br>HO-···· {{ preview.from_role }} → {{ preview.to_role }} · ○ open<br><span class="ctxc">asked: {{ preview.requested_action }}</span></div></div>
+    <div class="sk-line"><span class="kl">B · CAUSE · 30 S</span> {% for v in g.ontology.vocabulary %}{{ v }} —{{ ' · ' if not loop.last }}{% endfor %}</div>
+    <div class="sk-line"><span class="kl">D · NEXT TO YOU</span> ◂ {{ g.ontology.upstream|join(', ') or 'nobody named' }} · {{ g.ontology.downstream|join(', ') or 'nobody named' }} ▸</div>
+  </div>
+  <div class="ctx">No numbers. {{ preview.note }}</div>
 {% endif %}
-{% endif %}
+</aside>
+</div>
+<div class="footline"><div>{% for m in g.missing %}[{{ loop.index }}] {{ m.checked }}: {{ m.what }} not found{{ ' · ' if not loop.last }}{% endfor %}</div><div>refusal logged in the <a href="/audit">audit log</a></div></div>
 {% endblock %}

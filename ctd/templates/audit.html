@@ -1,8 +1,13 @@
 {% extends "base.html" %}
-{% block kicker %}GOVERNANCE · AUDIT LOG{% endblock %}
-{% block question %}What changed, who did it, and why?{% endblock %}
+{% from "_macros.html" import figs as hfigs %}
+{% block kicker %}GOVERNANCE · AUDIT LOG · APPEND ONLY · NEWEST FIRST{% endblock %}
+{% block question %}Who changed what on this contract, and why?{% endblock %}
+{% block pagemeta %}{{ hfigs(figs) }}{% endblock %}
 {% block body %}
-<p class="lead">Append-only. Name, time, reason, change.</p>
-<table><tr><th>#</th><th>When</th><th>Who</th><th>What</th><th>Subject</th><th>Why</th><th>Change</th></tr>
-{% for a in rows %}<tr><td class="cite">{{ a.id }}</td><td class="cite">{{ a.at }}</td><td>{{ a.actor }}</td><td>{{ a.action }}</td><td class="cite">{{ a.subject }}</td><td>{{ a.reason }}</td><td class="cite">{{ a.diff|truncate(140) }}</td></tr>{% endfor %}</table>
+<div class="row filterrow"><label class="ctx" for="flt">filter</label><input type="text" id="flt" placeholder="who, what, reason, record" style="max-width:24rem" oninput="filterRows(this.value)">
+  <span>people <b>{{ people }}</b></span><span>system <b>{{ system }}</b></span><span class="ctx">“system” rows act on behalf of a role, under rule v{{ rule_version }}</span></div>
+<table class="auditlog" id="auditlog"><tr><th>time</th><th>who</th><th>what</th><th>reason</th><th>change</th></tr>
+{% for a in rows %}<tr><td class="mono">{{ a.at[:16]|replace('T',' ') }}</td><td>{{ a.actor }}</td><td>{{ a.action|replace('_',' ') }} <span class="mono">{{ a.subject }}</span></td><td>{{ a.reason }}</td><td class="mono ctxc">{{ a.diff|truncate(140) }}</td></tr>{% endfor %}</table>
+<script>function filterRows(q){q=q.toLowerCase();document.querySelectorAll('#auditlog tr').forEach((tr,i)=>{if(i)tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none'})}</script>
+<div class="footline"><div>Every row has a name, a time and a reason; a row without a reason cannot be written (checked in code, and the table refuses updates and deletes).</div><div>rule v{{ rule_version }} · synthetic data pack</div></div>
 {% endblock %}

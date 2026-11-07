@@ -55,6 +55,8 @@ def reset() -> None:
 
 
 def audit(actor: str, action: str, subject: str, reason: str, diff: str = "") -> None:
+    if not (reason or "").strip():
+        raise ValueError("A row without a reason cannot be written.")
     with conn() as c:
         c.execute("INSERT INTO audit (at, actor, action, subject, reason, diff) VALUES (?,?,?,?,?,?)",
                   (now(), actor, action, subject, reason, diff))

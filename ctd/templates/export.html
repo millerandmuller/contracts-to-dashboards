@@ -1,25 +1,43 @@
 {% extends "base.html" %}
-{% block kicker %}GOVERNANCE · EXPORT TO POWER BI{% endblock %}
-{% block question %}Export the contract as a Power BI project{% endblock %}
+{% from "_macros.html" import figs as hfigs %}
+{% block kicker %}GOVERNANCE · EXPORT · {% if c %}<span class="mono">{{ c.contract_id }} v{{ c.version }}</span> → Power BI project (PBIP){% else %}no contract yet{% endif %}{% endblock %}
+{% block question %}Does the Power BI project match the contract, byte for byte?{% endblock %}
+{% block pagemeta %}{% if result %}{{ hfigs([[{'label': 'FILES', 'value': result.files|length}, {'label': 'SAME HASH TWICE', 'value': 'yes' if card[-1].ok else 'no'}],
+  [{'label': 'MANUAL EDITS, AC', 'value': manual_edits()}, {'label': 'PL', 'value': 0, 'cls': 'pl'}]]) }}{% endif %}{% endblock %}
 {% block body %}
-<p class="lead">{{ c.contract_id if c else 'No contract yet' }}{% if c %} version {{ c.version }}. No model is used here. Same contract version, same files, byte for byte.{% endif %}</p>
-{% if c %}<form method="post" action="/export"><button class="go">Write the project folder</button></form>{% endif %}
-{% if result %}
-<h3>{{ result.name }} · hash {{ result.sha256[:16] }}</h3>
-<div class="three" id="tree">
-{% for b in sm.boxes %}<div class="box"><div class="boxhead">{{ b.title }}<span class="cite"> · {{ b.count }} files</span></div><pre class="code tree">{% for f in b.files %}{{ f.split('/')[-1] if b.title.startswith('data') else f.split('/', 1)[1] }}
+<div class="split">
+<div class="mainc">
+  <div class="seclabel"><span>FILES GENERATED FROM THE CONTRACT</span>{% if result %}<span class="mono">{{ result.name }} · sha256 {{ result.sha256[:12] }}…</span>{% endif %}</div>
+  {% if not result %}
+  <p class="lead2">{% if c %}{{ c.contract_id }} version {{ c.version }}. No model is used here. Same contract version, same files, byte for byte.{% else %}No contract yet. Answer the three questions first.{% endif %}</p>
+  {% if c %}<form method="post" action="/export"><button class="go">Write the project folder</button></form>{% endif %}
+  {% else %}
+  <div id="tree">
+  {% for b in sm.boxes %}<div class="box"><div class="boxhead">{{ b.title }}<span class="cite"> · {{ b.count }} files</span></div><pre class="code tree">{% for f in b.files %}{{ f.split('/')[-1] if b.title.startswith('data') else f.split('/', 1)[1] }}
 {% endfor %}</pre></div>{% endfor %}
-</div>
-<div class="cite">Project entry: {{ sm.entry|join(', ') }}</div>
-<div class="two">
-  <div><div class="cite">Contract.tmdl (excerpt, read back from the file)</div>
-    <pre class="code" id="tmdl">{% for k, v in sm.fields.items() %}{{ k }}: {{ v }}
+  </div>
+  <div class="cite">Project entry: {{ sm.entry|join(', ') }}</div>
+  <div class="two">
+    <div><div class="cite">Contract.tmdl (excerpt, read back from the file)</div>
+      <pre class="code" id="tmdl">{% for k, v in sm.fields.items() %}{{ k }}: {{ v }}
 {% endfor %}</pre></div>
-  <div><div class="cite">Card visual</div>
-    <pre class="code" id="card-visual">visualType: {{ sm.card_type }}
+    <div><div class="cite">Card visual</div>
+      <pre class="code" id="card-visual">visualType: {{ sm.card_type }}
 bound to: Series[{{ sm.card_field }}]</pre></div>
+  </div>
+  <table class="fields props2"><tr><th>deterministic</th><td>same contract version → same files, byte for byte · sha256 {{ result.sha256[:12] }}…</td></tr>
+    <tr><th>no manual edits</th><td>{{ 'no view was edited by hand' if manual_edits() == 0 else manual_edits() ~ ' manual edits, each named in the audit log' }}</td></tr>
+    <tr><th>status</th><td><b>not yet opened in Power BI Desktop</b>; generated from the published PBIP/TMDL structure</td></tr></table>
+  <form method="post" action="/export"><button class="ghost">Write it again</button></form>
+  {% endif %}
 </div>
-<div class="closing" id="closing">{% for l in card %}<div class="cline {{ 'ok' if l.ok else 'gap' }}"><b>{{ l.head }}</b><span>{{ l.text }}</span></div>{% endfor %}</div>
-<div class="note">Status: generated from the published PBIP/TMDL structure. <b>not yet opened in Power BI Desktop</b>. Run the export twice and the hash stays the same.</div>
-{% endif %}
+<aside class="sidec">
+  {% if result %}
+  <div class="closing" id="closing"><div class="ctitle2">One contract per responsibility. The dashboard is generated from it.</div>
+    <div class="ctx">one line per point, each number counted in this run</div>
+    {% for l in card %}<div class="cline {{ 'ok' if l.ok else 'gap' }}"><b>{{ l.head }}</b><span>{{ l.text }}</span></div>{% endfor %}</div>
+  {% else %}<div class="ctx">The closing card appears after the export, with numbers counted in that run.</div>{% endif %}
+</aside>
+</div>
+<div class="footline"><div>Everything shown comes from the synthetic data pack; curated parts are labelled. Run the export twice and the hash stays the same.</div><div><a href="/audit">audit log</a></div></div>
 {% endblock %}
