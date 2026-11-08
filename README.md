@@ -2,6 +2,8 @@
 
 Since AI Hackathon 2026, Bayer challenge "Build Less, Build Better: AI for Governed Analytics".
 
+Not a chat over the workbook. A request becomes a versioned role contract; views, handovers and the Power BI project are generated from it.
+
 A vague request ("a monthly supply-risk dashboard by medicine and country") becomes a **versioned role contract**.
 Before anything is built, the catalog is searched: the request arrived 9 times, 6 existing assets already carry 3 of the 4 numbers, 2 of them belong to inactive owners.
 From one contract, **two role views** are drawn (they never count as assets). A threshold crossing opens a **handover** (open / acknowledged / closed) that only the receiving role can acknowledge. A **preservation test** blocks a consolidation that would silently flip a decision. Every change lands in an append-only **audit log**. The contract exports as a **Power BI project (PBIP)**. A role the catalog cannot serve gets an honest refusal that names the gap.
