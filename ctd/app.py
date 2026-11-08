@@ -16,6 +16,15 @@ ROOT = Path(__file__).resolve().parent
 app = FastAPI(title="Role contracts that generate dashboards")
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
 
+
+@app.middleware("http")
+async def static_no_cache(request: Request, call_next):
+    """Static files revalidate on every load (the links also carry a version query), so a changed stylesheet reaches the browser at once."""
+    response = await call_next(request)
+    if request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
 REQUEST = "We need a monthly supply-risk dashboard by medicine and country."
 LEAD = "Supply Analytics Lead"
 RECEIVER = "Launch Excellence Lead"

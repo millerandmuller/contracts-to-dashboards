@@ -165,6 +165,17 @@ env.globals["glance"] = glance
 env.globals["rule_version"] = RULE_VERSION
 env.globals["manual_edits"] = lambda: store.audit_count("view_edited")
 
+
+def static_v(name: str) -> int:
+    """Cache buster for /static links: the file's mtime, so a browser fetches a stylesheet again the moment it changes."""
+    try:
+        return int((ROOT / "static" / name).stat().st_mtime)
+    except OSError:
+        return 0
+
+
+env.globals["static_v"] = static_v
+
 # The demo path in its one order: (number, group, label, link, paths that count as this page). Nav and Next buttons both read it.
 DEMO = [
     (1, "REQUEST", "Inbox", "/", ["/"]),

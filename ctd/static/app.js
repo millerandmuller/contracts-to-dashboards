@@ -28,3 +28,15 @@ document.addEventListener('click',e=>{const b=e.target.closest('button.exfill');
 (function(){const draw=window.refreshStage;if(!draw)return;
   window.refreshStage=async function(){const open=[...document.querySelectorAll('#stage details[data-fold][open]')].map(d=>d.dataset.fold);
     await draw();open.forEach(k=>{const d=document.querySelector('#stage details[data-fold="'+k+'"]');if(d)d.open=true})}})();
+
+// Language toggle (EN original, FI by Google Translate). The choice lives in the googtrans cookie Google reads; EN removes it.
+(function(){var fi=/(^|; )googtrans=\/en\/fi/.test(document.cookie);
+  document.querySelectorAll('.lang button').forEach(function(b){if((b.dataset.lang==='fi')===fi)b.classList.add('on');
+    b.addEventListener('click',function(){var exp='; path=/; max-age=31536000';
+      if(b.dataset.lang==='fi'){document.cookie='googtrans=/en/fi'+exp}else{document.cookie='googtrans=; path=/; max-age=0'}
+      location.reload()})});
+  // IDs, hashes, record numbers and code stay as written in every language; re-applied after the stage or the reading card is swapped in by script.
+  window.markNoTranslate=function(){if(!fi)return;document.querySelectorAll('.mono,.cite,pre,code,.g-hid,.trail,.lastaudit').forEach(function(e){e.classList.add('notranslate');e.setAttribute('translate','no')})};
+  markNoTranslate();
+  var draw=window.refreshStage;if(draw){window.refreshStage=async function(){await draw();markNoTranslate()}}
+  var box=document.getElementById('reading');if(box&&fi)new MutationObserver(markNoTranslate).observe(box,{childList:true})})();
