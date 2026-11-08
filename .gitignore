@@ -4,3 +4,5 @@ __pycache__/
 data/state.db
 out/
 .env
+.vercel
+.env*

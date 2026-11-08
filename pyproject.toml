@@ -1,0 +1,18 @@
+[project]
+name = "contracts-to-dashboards"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi",
+  "uvicorn",
+  "jinja2",
+  "pandas",
+  "openpyxl",
+  "pyyaml",
+  "anthropic",
+  "httpx",
+  "python-multipart",
+]
+
+[tool.vercel]
+entrypoint = "ctd.app:app"

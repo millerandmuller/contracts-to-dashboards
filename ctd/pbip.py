@@ -5,6 +5,8 @@ Status: validated with Microsoft's report-authoring CLI and published to a Power
 """
 from __future__ import annotations
 
+import os
+
 import csv
 import hashlib
 import json
@@ -16,7 +18,7 @@ from .builder import KPI_SOURCE
 from .catalog import Catalog
 from .evaluate import kpi_name
 
-OUT = Path(__file__).resolve().parent.parent / "out"
+OUT = Path(os.environ.get("CTD_OUT") or Path(__file__).resolve().parent.parent / "out")  # CTD_OUT: a writable folder on hosts with a read-only code tree
 SCHEMA = "https://developer.microsoft.com/json-schemas/fabric/item/report/definition"
 
 
